@@ -11,6 +11,7 @@ import './globals.css';
 import { getConfig } from '@/lib/config';
 
 import { GlobalErrorIndicator } from '../components/GlobalErrorIndicator';
+import { GlobalDOMErrorHandler } from '../components/GlobalDOMErrorHandler';
 import { ChunkErrorGuard } from '../components/ChunkErrorGuard';
 import NavigationShell from '../components/NavigationShell';
 import { SessionTracker } from '../components/SessionTracker';
@@ -116,6 +117,8 @@ export default async function RootLayout({
     DOUBAN_PROXY: doubanProxy,
     DOUBAN_IMAGE_PROXY_TYPE: doubanImageProxyType,
     DOUBAN_IMAGE_PROXY: doubanImageProxy,
+    BANGUMI_IMAGE_PROXY_TYPE: process.env.NEXT_PUBLIC_BANGUMI_IMAGE_PROXY_TYPE || 'server',
+    BANGUMI_IMAGE_PROXY: process.env.NEXT_PUBLIC_BANGUMI_IMAGE_PROXY || '',
     DISABLE_YELLOW_FILTER: disableYellowFilter,
     CUSTOM_CATEGORIES: customCategories,
     FLUID_SEARCH: fluidSearch,
@@ -147,6 +150,7 @@ export default async function RootLayout({
         />
       </head>
       <body
+        translate='no'
         className={`${inter.className} min-h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-200`}
       >
         <ThemeProvider
@@ -160,6 +164,7 @@ export default async function RootLayout({
               <DownloadProvider>
                 <WatchRoomProvider>
                   <SiteProvider siteName={siteName} announcement={announcement}>
+                    <GlobalDOMErrorHandler />
                     <ChunkErrorGuard />
                     <SessionTracker />
                     <RouteWarmup />
