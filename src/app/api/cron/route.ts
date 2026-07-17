@@ -177,10 +177,7 @@ export async function GET(request: NextRequest) {
   // Reset DB query counter at the start
   resetDbQueryCount();
 
-  console.log(request.url);
-
   if (isRunning) {
-    console.log('⚠️ Cron job 已在运行中，跳过此次请求');
     const alreadyRunningResponse = {
       success: false,
       message: 'Cron job already running',
@@ -205,7 +202,6 @@ export async function GET(request: NextRequest) {
 
   try {
     isRunning = true;
-    console.log('Cron job triggered:', new Date().toISOString());
 
     await cronJob();
 
@@ -259,11 +255,8 @@ export async function GET(request: NextRequest) {
 }
 
 async function cronJob() {
-  console.log('🚀 开始执行定时任务...');
-
   // 🚀 清空缓存，确保每次 cron 任务都是最新数据
   cronCache.clear();
-  console.log('🧹 已清空进程缓存');
 
   // 🚀 阶段2优化：初始化性能统计
   currentCronStats = {
@@ -274,26 +267,22 @@ async function cronJob() {
   };
 
   // 🚀 预先缓存用户列表，避免并行任务的缓存竞争
-  console.log('📋 预先缓存用户列表...');
   try {
     const allUsers = await cronCache.wrap(
       'cron:all_users',
       () => db.getAllUsers(),
       300000
     );
-    console.log(`✅ 用户列表已缓存: ${allUsers.length} 个用户`);
   } catch (err) {
     console.error('❌ 预缓存用户列表失败:', err);
   }
 
   // 🚀 阶段4优化：并行执行互不依赖的任务组
   // 第一组：用户清理、配置刷新、视频缓存任务（并行执行）
-  console.log('🔄 开始执行第一组并行任务...');
   const [cleanupResult, , ,] = await Promise.allSettled([
     // 用户清理任务
     (async () => {
       try {
-        console.log('🧹 执行用户清理任务...');
         const cleanupStart = Date.now();
         const result = await cleanupInactiveUsers();
         const cleanupDuration = Date.now() - cleanupStart;
@@ -307,7 +296,6 @@ async function cronJob() {
           };
         }
 
-        console.log(`✅ 用户清理任务完成 (耗时: ${cleanupDuration}ms)`);
         return result;
       } catch (err) {
         console.error('❌ 用户清理任务失败:', err);
@@ -318,9 +306,7 @@ async function cronJob() {
     // 刷新配置
     (async () => {
       try {
-        console.log('📝 刷新配置...');
         await refreshConfig();
-        console.log('✅ 配置刷新完成');
       } catch (err) {
         console.error('❌ 配置刷新失败:', err);
       }
@@ -329,9 +315,7 @@ async function cronJob() {
     // 校验缓存大小（先执行，重建缺失的元数据）
     (async () => {
       try {
-        console.log('🔍 校验视频缓存大小...');
         await validateCacheSize();
-        console.log('✅ 缓存大小校验完成');
       } catch (err) {
         console.error('❌ 缓存大小校验失败:', err);
       }
@@ -340,9 +324,7 @@ async function cronJob() {
     // 清理过期视频缓存（后执行，此时元数据已重建）
     (async () => {
       try {
-        console.log('🧹 清理过期视频缓存...');
         await cleanupExpiredCache();
-        console.log('✅ 视频缓存清理完成');
       } catch (err) {
         console.error('❌ 视频缓存清理失败:', err);
       }
@@ -351,24 +333,18 @@ async function cronJob() {
     // 🎯 Spider JAR 更新任务（仅 Vercel 环境）
     (async () => {
       try {
-        console.log('🕷️ 检查 Spider JAR 更新...');
         await updateSpiderJarToBlob();
-        console.log('✅ Spider JAR 更新检查完成');
       } catch (err) {
         console.error('❌ Spider JAR 更新失败:', err);
       }
     })()
   ]);
 
-  console.log('✅ 第一组并行任务完成');
-
   // 第二组：直播频道刷新 + 播放记录和收藏刷新（并行执行）
-  console.log('🔄 开始执行第二组并行任务...');
   const [liveResult, recordsResult] = await Promise.allSettled([
     // 直播频道刷新
     (async () => {
       try {
-        console.log('📺 刷新直播频道...');
         const liveStart = Date.now();
         const result = await refreshAllLiveChannels();
         const liveDuration = Date.now() - liveStart;
@@ -382,7 +358,6 @@ async function cronJob() {
           };
         }
 
-        console.log(`✅ 直播频道刷新完成 (耗时: ${liveDuration}ms)`);
         return result;
       } catch (err) {
         console.error('❌ 直播频道刷新失败:', err);
@@ -393,7 +368,6 @@ async function cronJob() {
     // 播放记录和收藏刷新
     (async () => {
       try {
-        console.log('📊 刷新播放记录和收藏...');
         const recordsStart = Date.now();
         const result = await refreshRecordAndFavorites();
         const recordsDuration = Date.now() - recordsStart;
@@ -409,7 +383,6 @@ async function cronJob() {
           };
         }
 
-        console.log(`✅ 播放记录和收藏刷新完成 (耗时: ${recordsDuration}ms)`);
         return result;
       } catch (err) {
         console.error('❌ 播放记录和收藏刷新失败:', err);
@@ -417,8 +390,6 @@ async function cronJob() {
       }
     })()
   ]);
-
-  console.log('✅ 第二组并行任务完成');
 
   // 🚀 阶段2优化：完成性能统计
   if (currentCronStats) {
@@ -431,15 +402,7 @@ async function cronJob() {
     if (typeof global !== 'undefined') {
       (global as any).currentCronStats = currentCronStats;
     }
-
-    console.log('📊 ========== Cron 性能统计 ==========');
-    console.log(`⏱️  总耗时: ${currentCronStats.duration}ms (${(currentCronStats.duration / 1000).toFixed(2)}s)`);
-    console.log(`💾 内存使用: ${currentCronStats.memoryUsed.toFixed(2)}MB`);
-    console.log(`🗄️  数据库查询: ${currentCronStats.dbQueries} 次`);
-    console.log('=====================================');
   }
-
-  console.log('🎉 定时任务执行完成');
 }
 
 async function refreshAllLiveChannels() {
@@ -464,13 +427,9 @@ async function refreshAllLiveChannels() {
     {
       concurrency: 10,
       batchSize: 10,
-      onProgress: (processed, total) => {
-        console.log(`📺 直播频道刷新进度: ${processed}/${total}`);
-      }
+      onProgress: (processed, total) => {}
     }
   );
-
-  console.log(`✅ 直播频道刷新完成: 成功 ${results.length}, 失败 ${errors.length}`);
 
   // 保存配置
   await db.saveAdminConfig(config);
@@ -487,8 +446,6 @@ async function refreshConfig() {
   let config = await getConfig();
   if (config && config.ConfigSubscribtion && config.ConfigSubscribtion.URL && config.ConfigSubscribtion.AutoUpdate) {
     try {
-      console.log('🌐 开始获取配置订阅:', config.ConfigSubscribtion.URL);
-
       // 设置30秒超时
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
@@ -560,22 +517,17 @@ async function refreshRecordAndFavorites() {
       };
     }
 
-    console.log('📊 Cron 配置:', cronConfig);
-
     // 🚀 使用缓存获取用户列表（整个 cron 任务期间只查询一次）
     const users = await cronCache.wrap(
       'cron:all_users',
       () => db.getAllUsers(),
       300000 // 5分钟缓存
     );
-    console.log('📋 数据库中的用户列表:', users);
 
     if (process.env.USERNAME && !users.includes(process.env.USERNAME)) {
       users.push(process.env.USERNAME);
-      console.log(`➕ 添加环境变量用户: ${process.env.USERNAME}`);
     }
 
-    console.log('📋 最终处理用户列表:', users);
     // 函数级缓存：key 为 `${source}+${id}`，值为 Promise<VideoDetail | null>
     const detailCache = new Map<string, Promise<SearchResult | null>>();
 
@@ -602,9 +554,6 @@ async function refreshRecordAndFavorites() {
           {
             maxRetries: 2,
             retryDelay: 1000,
-            onRetry: (attempt, error) => {
-              console.log(`🔄 重试获取视频详情 (${source}+${id}), 第 ${attempt} 次: ${error.message}`);
-            }
           }
         )
           .then((detail) => {
@@ -622,15 +571,12 @@ async function refreshRecordAndFavorites() {
     };
 
     for (const user of users) {
-      console.log(`开始处理用户: ${user}`);
-
       // 🚀 使用缓存检查用户是否存在（避免重复查询）
       const userExists = await cronCache.wrap(
         `cron:user_exists:${user}`,
         () => db.checkUserExist(user),
         300000
       );
-      console.log(`用户 ${user} 是否存在: ${userExists}`);
 
       // 播放记录
       try {
@@ -650,7 +596,6 @@ async function refreshRecordAndFavorites() {
             const saveTime = new Date(record.save_time).getTime();
             return saveTime > cutoffTime;
           });
-          console.log(`📅 过滤最近 ${cronConfig.recentDays} 天活跃记录: ${recordsToProcess.length}/${totalRecords}`);
         }
 
         // 🔥 优化 2: 限制每次处理的记录数
@@ -662,7 +607,6 @@ async function refreshRecordAndFavorites() {
             return timeB - timeA;
           });
           recordsToProcess = recordsToProcess.slice(0, cronConfig.maxRecordsPerRun);
-          console.log(`🔢 限制处理数量: ${recordsToProcess.length}/${totalRecords}`);
         }
 
         // 🚀 Upstash 优化：收集需要更新的记录，最后批量写入
@@ -681,7 +625,6 @@ async function refreshRecordAndFavorites() {
             // 🔥 优化 3: 仅刷新连载中的剧集（已完结的跳过）
             if (cronConfig.onlyRefreshOngoing) {
               if (record.original_episodes && record.total_episodes >= record.original_episodes) {
-                console.log(`⏭️ 跳过已完结剧集: ${record.title} (${record.total_episodes}/${record.original_episodes})`);
                 return null;
               }
             }
@@ -712,9 +655,6 @@ async function refreshRecordAndFavorites() {
                   original_episodes: record.original_episodes,
                 }
               });
-              console.log(
-                `更新播放记录: ${record.title} (${record.total_episodes} -> ${episodeCount})`
-              );
               return key;
             }
             return null;
@@ -722,22 +662,18 @@ async function refreshRecordAndFavorites() {
           {
             concurrency: 10,
             batchSize: 10,
-            onProgress: (processed, total) => {
-              console.log(`📊 播放记录处理进度: ${processed}/${total}`);
-            }
+            onProgress: (processed, total) => {}
           }
         );
 
         // 🚀 Upstash 优化：批量写入所有更新（使用 mset，只算1条命令）
         if (recordsToUpdate.length > 0) {
           await db.savePlayRecordsBatch(user, recordsToUpdate);
-          console.log(`🚀 批量写入 ${recordsToUpdate.length} 条播放记录（mset 优化）`);
         }
 
         const processedRecords = recordResults.filter(r => r !== null).length;
         totalRecordsProcessed += processedRecords;
         totalRecordsErrors += recordErrors.length;
-        console.log(`播放记录处理完成: ${processedRecords}/${totalRecords}, 错误: ${recordErrors.length}`);
       } catch (err) {
         console.error(`获取用户播放记录失败 (${user}):`, err);
         totalRecordsErrors++;
@@ -764,7 +700,6 @@ async function refreshRecordAndFavorites() {
             const saveTime = new Date(fav.save_time).getTime();
             return saveTime > cutoffTime;
           });
-          console.log(`📅 过滤最近 ${cronConfig.recentDays} 天活跃收藏: ${favoritesToProcess.length}/${totalFavorites}`);
         }
 
         // 🔥 优化 2: 限制每次处理的收藏数
@@ -775,7 +710,6 @@ async function refreshRecordAndFavorites() {
             return timeB - timeA;
           });
           favoritesToProcess = favoritesToProcess.slice(0, cronConfig.maxRecordsPerRun);
-          console.log(`🔢 限制处理数量: ${favoritesToProcess.length}/${totalFavorites}`);
         }
 
         // 🚀 Upstash 优化：收集需要更新的收藏，最后批量写入
@@ -813,9 +747,6 @@ async function refreshRecordAndFavorites() {
                   search_title: fav.search_title,
                 }
               });
-              console.log(
-                `更新收藏: ${fav.title} (${fav.total_episodes} -> ${favEpisodeCount})`
-              );
               return key;
             }
             return null;
@@ -823,29 +754,23 @@ async function refreshRecordAndFavorites() {
           {
             concurrency: 10,
             batchSize: 10,
-            onProgress: (processed, total) => {
-              console.log(`📊 收藏处理进度: ${processed}/${total}`);
-            }
+            onProgress: (processed, total) => {}
           }
         );
 
         // 🚀 Upstash 优化：批量写入所有更新（使用 mset，只算1条命令）
         if (favoritesToUpdate.length > 0) {
           await db.saveFavoritesBatch(user, favoritesToUpdate);
-          console.log(`🚀 批量写入 ${favoritesToUpdate.length} 条收藏（mset 优化）`);
         }
 
         const processedFavorites = favResults.filter(r => r !== null).length;
         totalFavoritesProcessed += processedFavorites;
         totalFavoritesErrors += favErrors.length;
-        console.log(`收藏处理完成: ${processedFavorites}/${totalFavorites}, 错误: ${favErrors.length}`);
       } catch (err) {
         console.error(`获取用户收藏失败 (${user}):`, err);
         totalFavoritesErrors++;
       }
     }
-
-    console.log('刷新播放记录/收藏任务完成');
 
     // 返回统计数据
     return {
@@ -870,23 +795,19 @@ async function refreshRecordAndFavorites() {
 
 async function cleanupInactiveUsers() {
   try {
-    console.log('🔧 正在获取配置...');
     const config = await getConfig();
-    console.log('✅ 配置获取成功');
 
     // 清理策略：基于登入时间而不是播放记录
     // 删除条件：注册时间 >= X天 且 (从未登入 或 最后登入时间 >= X天)
 
     // 预热 Redis 连接，避免冷启动
     // 🚀 使用缓存的 getAllUsers 进行预热（与其他函数共享缓存）
-    console.log('🔥 预热数据库连接...');
     try {
       await cronCache.wrap(
         'cron:all_users',
         () => db.getAllUsers(),
         300000
       );
-      console.log('✅ 数据库连接预热成功');
     } catch (warmupErr) {
       console.warn('⚠️ 数据库连接预热失败:', warmupErr);
     }
@@ -894,8 +815,6 @@ async function cleanupInactiveUsers() {
     // 检查是否启用自动清理功能
     const autoCleanupEnabled = config.UserConfig?.AutoCleanupInactiveUsers ?? false;
     const inactiveUserDays = config.UserConfig?.InactiveUserDays ?? 7;
-
-    console.log(`📋 清理配置: 启用=${autoCleanupEnabled}, 保留天数=${inactiveUserDays}`);
 
     if (!autoCleanupEnabled) {
       console.log('⏭️ 自动清理非活跃用户功能已禁用，跳过清理任务');
@@ -906,19 +825,12 @@ async function cleanupInactiveUsers() {
       };
     }
 
-    console.log('🧹 开始清理非活跃用户...');
-
     // 🚀 使用缓存获取用户列表（与 refreshRecordAndFavorites 共享缓存）
     const allUsers = config.UserConfig.Users;
-    console.log('✅ 获取用户列表成功，共', allUsers.length, '个用户');
 
     const envUsername = process.env.USERNAME;
-    console.log('✅ 环境变量用户名:', envUsername);
 
     const cutoffTime = Date.now() - (inactiveUserDays * 24 * 60 * 60 * 1000);
-    console.log('✅ 计算截止时间成功:', new Date(cutoffTime).toISOString());
-
-    console.log('📊 即将开始用户循环...');
 
     // 🚀 阶段2优化：并发处理用户检查（5个并发）
     const usersToDelete: string[] = [];
@@ -926,22 +838,17 @@ async function cleanupInactiveUsers() {
     const { results: userCheckResults, errors: userCheckErrors } = await processBatch(
       allUsers,
       async (user) => {
-        console.log(`👤 正在检查用户: ${user.username} (角色: ${user.role})`);
-
         // 跳过管理员和owner用户
         if (user.role === 'admin' || user.role === 'owner') {
-          console.log(`  ⏭️ 跳过管理员用户: ${user.username}`);
           return { username: user.username, shouldDelete: false, reason: '管理员用户' };
         }
 
         // 跳过环境变量中的用户
         if (user.username === envUsername) {
-          console.log(`  ⏭️ 跳过环境变量用户: ${user.username}`);
           return { username: user.username, shouldDelete: false, reason: '环境变量用户' };
         }
 
         // 检查用户是否存在于数据库（5秒超时）
-        console.log(`  🔍 检查用户是否存在于数据库: ${user.username}`);
         let userExists = true;
         try {
           // 🚀 使用缓存（与 refreshRecordAndFavorites 共享）
@@ -954,19 +861,16 @@ async function cleanupInactiveUsers() {
             ),
             300000
           );
-          console.log(`  📝 用户存在状态: ${userExists}`);
         } catch (err) {
           console.error(`  ❌ 检查用户存在状态失败: ${err}, 跳过该用户`);
           throw err;
         }
 
         if (!userExists) {
-          console.log(`  ⚠️ 用户 ${user.username} 在配置中存在但数据库中不存在，跳过处理`);
           return { username: user.username, shouldDelete: false, reason: '数据库中不存在' };
         }
 
         // 获取用户统计信息（5秒超时）
-        console.log(`  📊 获取用户统计信息: ${user.username}`);
         let userStats;
         try {
           // 🚀 使用缓存（getUserPlayStat 内部会调用 getAllPlayRecords，已被缓存）
@@ -979,7 +883,6 @@ async function cleanupInactiveUsers() {
             ),
             300000
           ) as { lastLoginTime?: number; firstLoginTime?: number; loginCount?: number; [key: string]: any };
-          console.log(`  📈 用户统计结果:`, userStats);
         } catch (err) {
           console.error(`  ❌ 获取用户统计失败: ${err}, 跳过该用户`);
           throw err;
@@ -990,34 +893,20 @@ async function cleanupInactiveUsers() {
         const shouldDelete = lastLoginTime > 0 && lastLoginTime < cutoffTime;
 
         if (shouldDelete) {
-          console.log(`🗑️ 标记删除非活跃用户: ${user.username} (最后登入: ${new Date(lastLoginTime).toISOString()}, 登入次数: ${userStats.loginCount || 0}, 阈值: ${inactiveUserDays}天)`);
           return { username: user.username, shouldDelete: true, lastLoginTime, loginCount: userStats.loginCount || 0 };
         } else {
-          const reason = lastLoginTime > 0
-            ? `最近有登入活动 (最后登入: ${new Date(lastLoginTime).toISOString()})`
-            : '无登入记录（数据异常，保留用户）';
-          console.log(`✅ 保留用户 ${user.username}: ${reason}`);
-          return { username: user.username, shouldDelete: false, reason };
+          return { username: user.username, shouldDelete: false };
         }
       },
       {
         concurrency: 5,
         batchSize: 5,
-        onProgress: (processed, total) => {
-          console.log(`📊 用户检查进度: ${processed}/${total}`);
-        }
+        onProgress: (processed, total) => {}
       }
     );
 
     // 收集需要删除的用户
     usersToDelete.push(...userCheckResults.filter(r => r.shouldDelete).map(r => r.username));
-
-    console.log(`✅ 用户检查完成: 需删除 ${usersToDelete.length}, 错误 ${userCheckErrors.length}`);
-
-    // 收集需要删除的用户
-    usersToDelete.push(...userCheckResults.filter(r => r.shouldDelete).map(r => r.username));
-
-    console.log(`✅ 用户检查完成: 需删除 ${usersToDelete.length}, 错误 ${userCheckErrors.length}`);
 
     // 🚀 阶段2优化：并发删除用户（3个并发，避免数据库压力）
     let deletedCount = 0;
@@ -1025,8 +914,6 @@ async function cleanupInactiveUsers() {
       const { results: deleteResults, errors: deleteErrors } = await processBatch(
         usersToDelete,
         async (username) => {
-          console.log(`🗑️ 删除用户: ${username}`);
-
           // 从数据库删除用户数据
           await db.deleteUser(username);
 
@@ -1041,26 +928,19 @@ async function cleanupInactiveUsers() {
         {
           concurrency: 3,
           batchSize: 3,
-          onProgress: (processed, total) => {
-            console.log(`📊 用户删除进度: ${processed}/${total}`);
-          }
+          onProgress: (processed, total) => {}
         }
       );
 
       deletedCount = deleteResults.length;
-      console.log(`✅ 用户删除完成: 成功 ${deletedCount}, 失败 ${deleteErrors.length}`);
     }
 
     // 如果有删除操作，保存更新后的配置
     if (deletedCount > 0) {
       await db.saveAdminConfig(config);
-      console.log(`✨ 清理完成，共删除 ${deletedCount} 个非活跃用户`);
-    } else {
-      console.log('✨ 清理完成，无需删除任何用户');
     }
 
     // 优化活跃用户的统计显示（等级系统）
-    console.log('🎯 开始优化活跃用户等级显示...');
     await optimizeActiveUserLevels();
 
     // 返回统计数据
@@ -1153,15 +1033,11 @@ async function optimizeActiveUserLevels() {
           // 注意：这里我们只计算等级信息用于日志显示，不保存到数据库
           // 等级信息会在前端动态计算，确保数据一致性
           optimizedCount++;
-
-          console.log(`🎯 用户等级: ${user} -> ${userLevel.icon} ${userLevel.name} (登录${userStats.loginCount}次)`);
         }
       } catch (err) {
         console.error(`❌ 优化用户等级失败 (${user}):`, err);
       }
     }
-
-    console.log(`✅ 等级优化完成，共优化 ${optimizedCount} 个用户`);
   } catch (err) {
     console.error('🚫 等级优化任务失败:', err);
   }
@@ -1174,7 +1050,6 @@ async function optimizeActiveUserLevels() {
 async function updateSpiderJarToBlob() {
   try {
     // 1. 强制从 GitHub 拉取最新版本
-    console.log('[Spider Update] 从远程拉取最新 JAR...');
     const newJar = await getSpiderJar(true);
 
     if (!newJar.success) {
@@ -1182,15 +1057,9 @@ async function updateSpiderJarToBlob() {
       return;
     }
 
-    console.log(`[Spider Update] 获取成功: ${newJar.source}, MD5: ${newJar.md5}, 大小: ${newJar.size} bytes`);
-
     // 2. 上传到 Blob（会自动覆盖旧版本）
     const blobUrl = await uploadSpiderJarToBlob(newJar.buffer, newJar.md5, newJar.source);
-    if (blobUrl) {
-      console.log(`[Spider Update] ✅ JAR 已更新到 Blob CDN!`);
-      console.log(`[Spider Update] URL: ${blobUrl}`);
-      console.log(`[Spider Update] MD5: ${newJar.md5}`);
-    } else {
+    if (!blobUrl) {
       console.warn('[Spider Update] Blob 上传失败（可能不在 Vercel 环境）');
     }
   } catch (error) {

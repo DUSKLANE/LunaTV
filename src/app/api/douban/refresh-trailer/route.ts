@@ -80,7 +80,6 @@ async function setCache(id: string, data: TrailerCache): Promise<void> {
   try {
     const ttl = CACHE_TTL[data.status];
     await db.setCache(getCacheKey(id), data, ttl);
-    console.log(`[refresh-trailer] 已缓存 ${id}，状态: ${data.status}，TTL: ${ttl}秒`);
   } catch (error) {
     console.error('[refresh-trailer] Redis 写入失败:', error);
   }
@@ -90,7 +89,6 @@ async function setCache(id: string, data: TrailerCache): Promise<void> {
 async function clearCache(id: string): Promise<void> {
   try {
     await db.deleteCache(getCacheKey(id));
-    console.log(`[refresh-trailer] 已清除缓存 ${id}`);
   } catch (error) {
     console.error('[refresh-trailer] Redis 删除失败:', error);
   }
@@ -129,7 +127,6 @@ async function incrementRateLimit(): Promise<void> {
     const count = await db.getCache(RATE_LIMIT_KEY) as number | null;
     const newCount = (count || 0) + 1;
     await db.setCache(RATE_LIMIT_KEY, newCount, RATE_LIMIT_WINDOW);
-    console.log(`[refresh-trailer] 限流计数: ${newCount}/${RATE_LIMIT_MAX_REQUESTS} (${RATE_LIMIT_WINDOW}秒窗口)`);
   } catch (error) {
     console.error('[refresh-trailer] 更新限流计数失败:', error);
   }
@@ -142,7 +139,6 @@ async function waitForRequestInterval(): Promise<void> {
 
   if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
     const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
-    console.log(`[refresh-trailer] 全局限流：等待 ${waitTime}ms 后请求豆瓣`);
     await new Promise(resolve => setTimeout(resolve, waitTime));
   }
 
@@ -160,8 +156,6 @@ async function fetchTrailerWithRetry(id: string, retryCount = 0): Promise<string
   try {
     // 先尝试 movie 端点
     let mobileApiUrl = `https://m.douban.com/rexxar/api/v2/movie/${id}`;
-
-    console.log(`[refresh-trailer] 开始请求影片 ${id}${retryCount > 0 ? ` (重试 ${retryCount}/${MAX_RETRIES})` : ''}`);
 
     // 创建 AbortController 用于超时控制
     const controller = new AbortController();
@@ -186,9 +180,6 @@ async function fetchTrailerWithRetry(id: string, retryCount = 0): Promise<string
 
     clearTimeout(timeoutId);
 
-    const fetchTime = Date.now() - startTime;
-    console.log(`[refresh-trailer] 影片 ${id} 请求完成，耗时: ${fetchTime}ms, 状态: ${response.status}`);
-
     if (!response.ok) {
       throw new Error(`豆瓣API返回错误: ${response.status}`);
     }
@@ -200,10 +191,6 @@ async function fetchTrailerWithRetry(id: string, retryCount = 0): Promise<string
       console.warn(`[refresh-trailer] 影片 ${id} 没有预告片数据`);
       throw new Error('该影片没有预告片');
     }
-
-    const totalTime = Date.now() - startTime;
-    const fetchedAt = new Date().toISOString();
-    console.log(`[refresh-trailer] 影片 ${id} 成功获取trailer URL，总耗时: ${totalTime}ms，获取时间: ${fetchedAt}`);
 
     return trailerUrl;
   } catch (error) {
@@ -304,8 +291,6 @@ export async function GET(request: Request) {
         const videoFileExists = await isVideoCached('', id);
 
         if (videoFileExists) {
-          console.log(`[refresh-trailer] 强制刷新但命中视频文件缓存: ${id}，直接返回，不清除 Redis 缓存`);
-
           // 返回代理 URL（使用占位符 URL，video-proxy 会根据 douban_id 找到实际文件）
           const tempUrl = `https://vt1.doubanio.com/placeholder/M/${id}.mp4`;
           const cachedVideoUrl = `/api/video-proxy?url=${encodeURIComponent(tempUrl)}&douban_id=${id}`;
@@ -379,7 +364,6 @@ export async function GET(request: Request) {
     }
 
     // 视频文件缓存未命中，清除 Redis 缓存，准备请求豆瓣
-    console.log(`[refresh-trailer] 强制刷新，清除 Redis 缓存: ${id}`);
     await clearCache(id);
   } else {
     // 1. 优先检查视频文件缓存（本地文件最可靠）
@@ -389,8 +373,6 @@ export async function GET(request: Request) {
         const videoFileExists = await isVideoCached('', id);
 
         if (videoFileExists) {
-          console.log(`[refresh-trailer] 命中视频文件缓存: ${id}，返回代理 URL`);
-
           const tempUrl = `https://vt1.doubanio.com/placeholder/M/${id}.mp4`;
           const cachedVideoUrl = `/api/video-proxy?url=${encodeURIComponent(tempUrl)}&douban_id=${id}`;
 
@@ -433,8 +415,6 @@ export async function GET(request: Request) {
     if (cached) {
       const now = Date.now();
       const age = Math.floor((now - cached.timestamp) / 1000);
-
-      console.log(`[refresh-trailer] 命中 Redis 缓存: ${id}，状态: ${cached.status}，年龄: ${age}秒`);
 
       if (cached.status === 'success' && cached.url) {
         const successResponse = {
@@ -554,7 +534,6 @@ export async function GET(request: Request) {
   // 3.2 检查是否已有相同 ID 的请求正在进行（防止并发重复请求）
   const existingRequest = pendingRequests.get(id);
   if (existingRequest) {
-    console.log(`[refresh-trailer] 检测到正在进行的请求，等待结果: ${id}`);
     try {
       const result = await existingRequest;
 

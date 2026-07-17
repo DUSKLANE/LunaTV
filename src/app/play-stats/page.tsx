@@ -228,7 +228,6 @@ const PlayStatsPage: React.FC = () => {
 
   // 处理刷新按钮点击
   const handleRefreshClick = async () => {
-    console.log('刷新按钮被点击');
     try {
       await invalidatePlayStats();
       console.log('所有数据已刷新');
@@ -321,31 +320,9 @@ const PlayStatsPage: React.FC = () => {
 
   // 处理追番更新卡片点击
   const handleWatchingUpdatesClick = () => {
-    console.log('点击追番卡片，watchingUpdates:', watchingUpdates);
-    console.log('updatedCount:', watchingUpdates?.updatedCount);
-    console.log('continueWatchingCount:', watchingUpdates?.continueWatchingCount);
-
     if (watchingUpdates && ((watchingUpdates.updatedCount || 0) > 0 || (watchingUpdates.continueWatchingCount || 0) > 0)) {
-      console.log('条件满足，显示弹窗');
       setShowWatchingUpdates(true);
-      console.log('setShowWatchingUpdates(true) 已调用');
-
-      // 强制刷新状态
-      setTimeout(() => {
-        setShowWatchingUpdates(prev => {
-          console.log('强制状态更新，当前值:', prev);
-          return true;
-        });
-      }, 100);
-    } else {
-      console.log('条件不满足，不显示弹窗');
     }
-  };
-
-  // 测试函数：强制显示弹窗
-  const forceShowPopup = () => {
-    console.log('强制显示弹窗');
-    setShowWatchingUpdates(true);
   };
 
   // 关闭追番更新详情

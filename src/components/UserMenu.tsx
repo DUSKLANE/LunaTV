@@ -200,7 +200,6 @@ export const UserMenu: React.FC = () => {
 
     // 如果是打开菜单，强制刷新追番更新
     if (willOpen && showWatchingUpdates) {
-      console.log('打开菜单时强制刷新追番更新...');
       refreshWatchingUpdates();
     }
   };
@@ -384,16 +383,6 @@ export const UserMenu: React.FC = () => {
 
   // 检查是否显示播放统计按钮（所有登录用户，且非localstorage存储）
   const showPlayStats = authInfo?.username && storageType !== 'localstorage';
-
-  // 调试信息
-  console.log('UserMenu 更新提醒调试:', {
-    username: authInfo?.username,
-    storageType,
-    watchingUpdates,
-    showWatchingUpdates,
-    hasActualUpdates,
-    totalUpdates
-  });
 
   // 角色中文映射
   const getRoleText = (role?: string) => {

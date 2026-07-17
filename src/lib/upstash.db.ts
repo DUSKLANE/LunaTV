@@ -686,7 +686,6 @@ export class UpstashRedisStorage implements IStorage {
       // 删除管理员配置
       await withRetry(() => this.client.del(this.adminConfigKey()));
 
-      console.log('所有数据已清空');
     } catch (error) {
       console.error('清空数据失败:', error);
       throw new Error('清空数据失败');
@@ -744,7 +743,6 @@ export class UpstashRedisStorage implements IStorage {
     const keys = await withRetry(() => this.client.keys(pattern));
     if (keys.length > 0) {
       await withRetry(() => this.client.del(...keys));
-      console.log(`Cleared ${keys.length} cache entries with pattern: ${pattern}`);
     }
   }
 
@@ -756,8 +754,6 @@ export class UpstashRedisStorage implements IStorage {
   async migrateData(): Promise<void> {
     const migrated = await withRetry(() => this.client.get(this.migrationKey()));
     if (migrated === 'done') return;
-
-    console.log('开始数据迁移：扁平 key → Hash 结构...');
 
     try {
       // 迁移播放记录
@@ -773,8 +769,6 @@ export class UpstashRedisStorage implements IStorage {
           await withRetry(() => this.client.del(oldKey));
         }
       }
-      if (oldPrKeys.length > 0) console.log(`迁移了 ${oldPrKeys.length} 条播放记录`);
-
       // 迁移收藏
       const favKeys: string[] = await withRetry(() => this.client.keys('u:*:fav:*'));
       const oldFavKeys = favKeys.filter(k => { const p = k.split(':'); return p.length >= 4 && p[2] === 'fav' && p[3] !== ''; });
@@ -788,8 +782,6 @@ export class UpstashRedisStorage implements IStorage {
           await withRetry(() => this.client.del(oldKey));
         }
       }
-      if (oldFavKeys.length > 0) console.log(`迁移了 ${oldFavKeys.length} 条收藏`);
-
       // 迁移 skipConfig
       const skipKeys: string[] = await withRetry(() => this.client.keys('u:*:skip:*'));
       const oldSkipKeys = skipKeys.filter(k => { const p = k.split(':'); return p.length >= 4 && p[2] === 'skip' && p[3] !== ''; });
@@ -803,8 +795,6 @@ export class UpstashRedisStorage implements IStorage {
           await withRetry(() => this.client.del(oldKey));
         }
       }
-      if (oldSkipKeys.length > 0) console.log(`迁移了 ${oldSkipKeys.length} 条跳过配置`);
-
       // 迁移 episodeSkipConfig
       const esKeys: string[] = await withRetry(() => this.client.keys('u:*:episodeskip:*'));
       const oldEsKeys = esKeys.filter(k => { const p = k.split(':'); return p.length >= 4 && p[2] === 'episodeskip' && p[3] !== ''; });
@@ -818,10 +808,7 @@ export class UpstashRedisStorage implements IStorage {
           await withRetry(() => this.client.del(oldKey));
         }
       }
-      if (oldEsKeys.length > 0) console.log(`迁移了 ${oldEsKeys.length} 条剧集跳过配置`);
-
       await withRetry(() => this.client.set(this.migrationKey(), 'done'));
-      console.log('数据迁移完成');
     } catch (error) {
       console.error('数据迁移失败:', error);
     }
@@ -836,8 +823,6 @@ export class UpstashRedisStorage implements IStorage {
     const migrated = await withRetry(() => this.client.get(this.pwdMigrationKey()));
     if (migrated === 'done') return;
 
-    console.log('开始密码迁移：明文 → 加盐哈希...');
-
     try {
       const pwdKeys: string[] = await withRetry(() => this.client.keys('u:*:pwd'));
       let count = 0;
@@ -851,7 +836,6 @@ export class UpstashRedisStorage implements IStorage {
         count++;
       }
       await withRetry(() => this.client.set(this.pwdMigrationKey(), 'done'));
-      console.log(`密码迁移完成，共迁移 ${count} 个用户`);
     } catch (error) {
       console.error('密码迁移失败:', error);
     }
@@ -1073,11 +1057,6 @@ export class UpstashRedisStorage implements IStorage {
             lastLoginBrowser?: string;
             lastLoginOs?: string;
           }>(loginStatsKey);
-          console.log(`[Upstash-NoRecords] 用户 ${userName} 登入统计查询:`, {
-            key: loginStatsKey,
-            rawValue: storedLoginStats,
-            hasValue: !!storedLoginStats
-          });
 
           if (storedLoginStats) {
             loginStats = {
@@ -1091,9 +1070,6 @@ export class UpstashRedisStorage implements IStorage {
               lastLoginBrowser: storedLoginStats.lastLoginBrowser,
               lastLoginOs: storedLoginStats.lastLoginOs,
             };
-            console.log(`[Upstash-NoRecords] 解析后的登入统计:`, loginStats);
-          } else {
-            console.log(`[Upstash-NoRecords] 用户 ${userName} 没有登入统计数据`);
           }
         } catch (error) {
           console.error(`获取用户 ${userName} 登入统计失败:`, error);
@@ -1179,11 +1155,6 @@ export class UpstashRedisStorage implements IStorage {
           lastLoginBrowser?: string;
           lastLoginOs?: string;
         }>(loginStatsKey);
-        console.log(`[Upstash] 用户 ${userName} 登入统计查询:`, {
-          key: loginStatsKey,
-          rawValue: storedLoginStats,
-          hasValue: !!storedLoginStats
-        });
 
         if (storedLoginStats) {
           loginStats = {
@@ -1197,9 +1168,6 @@ export class UpstashRedisStorage implements IStorage {
             lastLoginBrowser: storedLoginStats.lastLoginBrowser,
             lastLoginOs: storedLoginStats.lastLoginOs,
           };
-          console.log(`[Upstash] 解析后的登入统计:`, loginStats);
-        } else {
-          console.log(`[Upstash] 用户 ${userName} 没有登入统计数据`);
         }
       } catch (error) {
         console.error(`获取用户 ${userName} 登入统计失败:`, error);
@@ -1382,8 +1350,6 @@ export class UpstashRedisStorage implements IStorage {
       }
 
       await this.client.set(loginStatsKey, loginStats);
-
-      console.log(`用户 ${userName} 登入统计已更新:`, loginStats);
     } catch (error) {
       console.error(`更新用户 ${userName} 登入统计失败:`, error);
       throw error;
@@ -1406,7 +1372,6 @@ export class UpstashRedisStorage implements IStorage {
     try {
       const key = `u:${userName}:emby-config`;
       await withRetry(() => this.client.set(key, config));
-      console.log(`用户 ${userName} Emby 配置已保存`);
     } catch (error) {
       console.error(`保存用户 ${userName} Emby 配置失败:`, error);
       throw error;
@@ -1417,7 +1382,6 @@ export class UpstashRedisStorage implements IStorage {
     try {
       const key = `u:${userName}:emby-config`;
       await withRetry(() => this.client.del(key));
-      console.log(`用户 ${userName} Emby 配置已删除`);
     } catch (error) {
       console.error(`删除用户 ${userName} Emby 配置失败:`, error);
       throw error;
@@ -1430,7 +1394,6 @@ export class UpstashRedisStorage implements IStorage {
       const key = `crash-log:${crashLog.timestamp}`;
       // 保存崩溃日志，设置 7 天 TTL (604800 秒)
       await withRetry(() => this.client.set(key, JSON.stringify(crashLog), { ex: 604800 }));
-      console.log(`崩溃日志已保存: ${crashLog.timestamp}`);
     } catch (error) {
       console.error('保存崩溃日志失败:', error);
       throw error;
@@ -1467,7 +1430,6 @@ export class UpstashRedisStorage implements IStorage {
     try {
       const key = `crash-log:${timestamp}`;
       await withRetry(() => this.client.del(key));
-      console.log(`崩溃日志已删除: ${timestamp}`);
     } catch (error) {
       console.error('删除崩溃日志失败:', error);
       throw error;
@@ -1480,7 +1442,6 @@ export class UpstashRedisStorage implements IStorage {
 
       if (keys.length > 0) {
         await withRetry(() => this.client.del(...keys));
-        console.log(`已清除 ${keys.length} 条崩溃日志`);
       }
     } catch (error) {
       console.error('清除崩溃日志失败:', error);
@@ -1517,8 +1478,6 @@ function getUpstashRedisClient(): Redis {
           Math.min(1000 * Math.pow(2, retryCount), 30000),
       },
     });
-
-    console.log('Upstash Redis client created successfully');
 
     (global as any)[globalKey] = client;
   }

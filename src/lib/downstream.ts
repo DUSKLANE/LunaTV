@@ -185,19 +185,14 @@ export async function searchFromApi(
     // 智能搜索：使用预计算的变体（最多2个，由 generateSearchVariants 智能生成）
     const searchVariants = precomputedVariants || generateSearchVariants(query);
 
-    // 调试：输出搜索变体
-    console.log(`[DEBUG] 搜索变体 for "${query}":`, searchVariants);
-
     // 🚀 并行搜索所有变体（关键优化：不再串行等待）
     const variantPromises = searchVariants.map(async (variant, index) => {
       const apiUrl = apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(variant);
-      console.log(`[DEBUG] 并行搜索变体 ${index + 1}/${searchVariants.length}: "${variant}"`);
 
       try {
         const result = await searchWithCache(apiSite, variant, 1, apiUrl, 8000);
         return { variant, index, results: result.results, pageCount: result.pageCount };
       } catch (error) {
-        console.log(`[DEBUG] 变体 "${variant}" 搜索失败:`, error);
         return { variant, index, results: [], pageCount: undefined };
       }
     });
@@ -215,8 +210,6 @@ export async function searchFromApi(
 
     for (const { variant, index, results: variantData, pageCount } of variantResults) {
       if (variantData.length > 0) {
-        console.log(`[DEBUG] 变体 "${variant}" 找到 ${variantData.length} 个结果`);
-
         // 记录第一个变体的页数
         if (index === 0 && pageCount) {
           pageCountFromFirst = pageCount;
@@ -230,8 +223,6 @@ export async function searchFromApi(
             results.push(result);
           }
         });
-      } else {
-        console.log(`[DEBUG] 变体 "${variant}" 无结果`);
       }
     }
 
@@ -239,8 +230,6 @@ export async function searchFromApi(
     if (results.length === 0) {
       return [];
     }
-
-    console.log(`[DEBUG] 最终找到 ${results.length} 个唯一结果`);
 
     // 使用原始查询进行后续分页
     query = searchVariants[0];

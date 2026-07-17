@@ -67,12 +67,9 @@ export async function POST(req: NextRequest) {
     const ACG_CACHE_TIME = 30 * 60;
     const cacheKey = `acg-nyaa-${trimmedKeyword}`;
 
-    console.log(`🔍 检查 Nyaa 搜索缓存: ${cacheKey}`);
-
     try {
       const cached = await db.getCache(cacheKey);
       if (cached) {
-        console.log(`✅ Nyaa 搜索缓存命中: "${trimmedKeyword}"`);
         return NextResponse.json({
           ...cached,
           fromCache: true,
@@ -80,7 +77,6 @@ export async function POST(req: NextRequest) {
           cacheTimestamp: new Date().toISOString(),
         });
       }
-      console.log(`❌ Nyaa 搜索缓存未命中: "${trimmedKeyword}"`);
     } catch (cacheError) {
       console.warn('Nyaa 搜索缓存读取失败:', cacheError);
     }
@@ -176,7 +172,6 @@ export async function POST(req: NextRequest) {
 
     try {
       await db.setCache(cacheKey, responseData, ACG_CACHE_TIME);
-      console.log(`💾 Nyaa 搜索结果已缓存: "${trimmedKeyword}" - ${results.length} 个结果, TTL: ${ACG_CACHE_TIME}s`);
     } catch (cacheError) {
       console.warn('Nyaa 搜索缓存保存失败:', cacheError);
     }

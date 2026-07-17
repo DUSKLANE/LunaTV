@@ -127,8 +127,6 @@ export function useCachedData<T>({
       if (enableCache && !ignoreCache) {
         const cached = globalCache.get<T>(cacheKey);
         if (cached !== null) {
-          console.log(`[useCachedData] Cache hit: ${cacheKey}`);
-
           if (isMountedRef.current) {
             setData(cached);
             setFromCache(true);
@@ -143,8 +141,6 @@ export function useCachedData<T>({
       const thisRequestId = ++requestIdRef.current;
       currentRequestId.current = thisRequestId;
 
-      console.log(`[useCachedData] Fetching: ${cacheKey} (requestId: ${thisRequestId})`);
-
       if (isMountedRef.current) {
         setLoading(true);
         setFromCache(false);
@@ -157,7 +153,6 @@ export function useCachedData<T>({
 
         // 4. 竞态检测：只有最新的请求结果才生效
         if (currentRequestId.current !== thisRequestId) {
-          console.log(`[useCachedData] Stale request detected, ignoring (requestId: ${thisRequestId})`);
           return;
         }
 
@@ -171,7 +166,6 @@ export function useCachedData<T>({
         // 6. 保存到缓存
         if (enableCache) {
           globalCache.set(cacheKey, result, ttl);
-          console.log(`[useCachedData] Cached: ${cacheKey} (TTL: ${ttl}s)`);
         }
       } catch (err) {
         // 竞态检测

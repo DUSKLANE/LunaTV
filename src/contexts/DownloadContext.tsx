@@ -175,12 +175,9 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
       type: 'TS' | 'MP4' = 'TS',
       requestHeaders?: { referer?: string; origin?: string; userAgent?: string }
     ) => {
-      console.log('[DownloadContext] 创建下载任务:', title, url);
       try {
         // 解析 M3U8，传递请求头
-        console.log('[DownloadContext] 开始解析 M3U8...');
         const m3u8Task = await parseM3U8(url, requestHeaders);
-        console.log('[DownloadContext] M3U8 解析成功，片段数:', m3u8Task.rangeDownload.targetSegment);
 
         // Service Worker 模式在长视频/慢网络下有被浏览器终止导致下载不完整的风险
         // 主动提醒用户，避免"进度显示100%但文件不完整"的静默失败
@@ -210,12 +207,9 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
 
         // 保存到 IndexedDB
         await saveTask(taskId, m3u8Task, 'ready');
-        console.log('[DownloadContext] 任务已保存到 IndexedDB');
 
         // 自动开始下载（传递 task snapshot 避免 stale closure）
-        console.log('[DownloadContext] 开始自动下载...');
         await startTask(taskId, newTask);
-        console.log('[DownloadContext] startTask 调用完成');
 
         // 注意：不在这里自动打开下载面板，由调用方控制
       } catch (error) {
@@ -228,7 +222,6 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
 
   const startTask = useCallback(
     async (taskId: string, taskSnapshot?: M3U8DownloadTask) => {
-      console.log('[DownloadContext] startTask 被调用, taskId:', taskId);
       const task = taskSnapshot || tasksRef.current.find(t => t.id === taskId);
       if (!task) {
         console.error('[DownloadContext] 找不到任务:', taskId);
@@ -237,7 +230,6 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
 
       // 如果已经在下载中，不重复启动
       if (taskControllers.current.has(taskId)) {
-        console.log('[DownloadContext] 任务已经在下载中，跳过');
         return;
       }
 
@@ -245,16 +237,13 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
       const pauseController = new PauseResumeController();
       const abortController = new AbortController();
       taskControllers.current.set(taskId, { pauseController, abortController });
-      console.log('[DownloadContext] 控制器已创建');
 
       // 更新状态为下载中
       updateTask(taskId, { status: 'downloading' });
       await updateTaskStatus(taskId, 'downloading');
-      console.log('[DownloadContext] 任务状态已更新为 downloading');
 
       try {
         // 开始下载（使用用户设置）
-        console.log('[DownloadContext] 开始调用 downloadM3U8Video...');
         await downloadM3U8Video(
           task,
           (progress: DownloadProgress) => {
@@ -275,13 +264,11 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
         );
 
         // 下载完成
-        console.log('[DownloadContext] 下载完成:', task.title);
         updateTask(taskId, { status: 'done' });
         await updateTaskStatus(taskId, 'done');
       } catch (error: unknown) {
         if (error instanceof Error && error.name === 'AbortError') {
           // 用户取消
-          console.log('[DownloadContext] 下载已取消:', task.title);
         } else {
           // 下载错误
           console.error('[DownloadContext] 下载错误:', task.title, error);
@@ -291,7 +278,6 @@ export function DownloadProvider({ children }: { children: React.ReactNode }) {
       } finally {
         // 清理控制器
         taskControllers.current.delete(taskId);
-        console.log('[DownloadContext] 控制器已清理');
       }
     },
     [updateTask, settings]

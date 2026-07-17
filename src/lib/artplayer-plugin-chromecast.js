@@ -135,7 +135,6 @@ export default function artplayerPluginChromecast(option = {}) {
       
       // 修复 API 加载逻辑
       if (!window.chrome || !window.chrome.cast || !window.cast) {
-        console.log('Loading Cast API...')
         loadScript(option.sdk || DEFAULT_SDK).catch(reject)
       } else if (window.cast && window.cast.framework) {
         // API 已加载，直接初始化
@@ -214,28 +213,6 @@ export default function artplayerPluginChromecast(option = {}) {
     // 检查是否为Chrome浏览器且不是iOS
     const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : '';
     
-    // 详细调试日志
-    console.log('🔍 Chromecast Plugin Debug:', {
-      userAgent: userAgent,
-      hasChrome: /Chrome/i.test(userAgent),
-      hasEdg: /Edg/i.test(userAgent),
-      hasOPR: /OPR/i.test(userAgent),
-      hasSamsung: /SamsungBrowser/i.test(userAgent),
-      hasOPPO: /OPPO/i.test(userAgent),
-      hasOppoBrowser: /OppoBrowser/i.test(userAgent),
-      hasHeyTapBrowser: /HeyTapBrowser/i.test(userAgent),
-      hasColorOS: /ColorOS/i.test(userAgent),
-      hasOneplus: /OnePlus/i.test(userAgent),
-      hasXiaomi: /Xiaomi/i.test(userAgent),
-      hasMIUI: /MIUI/i.test(userAgent),
-      hasHuawei: /Huawei/i.test(userAgent),
-      hasVivo: /Vivo/i.test(userAgent),
-      hasUC: /UCBrowser/i.test(userAgent),
-      hasQQ: /QQBrowser/i.test(userAgent),
-      hasBaidu: /Baidu/i.test(userAgent),
-      hasSogou: /SogouMobileBrowser/i.test(userAgent),
-    });
-    
     const isChrome = /Chrome/i.test(userAgent) && 
                     !/Edg/i.test(userAgent) &&      // 排除Edge
                     !/OPR/i.test(userAgent) &&      // 排除Opera
@@ -256,23 +233,14 @@ export default function artplayerPluginChromecast(option = {}) {
     
     const isIOS = /iPad|iPhone|iPod/i.test(userAgent) && !window.MSStream;
     
-    console.log('🎯 Chromecast Detection Result:', {
-      isChrome: isChrome,
-      isIOS: isIOS,
-      shouldShowChromecast: isChrome && !isIOS
-    });
-    
     // 如果不是Chrome浏览器或者是iOS，直接返回空插件，不添加任何控件
     if (!isChrome || isIOS) {
-      console.log('❌ Chromecast plugin: Browser not supported, skipping control addition');
       return {
         name: 'artplayerPluginChromecast',
         getCastState: () => null,
         isCasting: () => false,
       };
     }
-    
-    console.log('✅ Chromecast plugin: Adding control button for supported browser');
 
     art.controls.add({
       name: 'chromecast',

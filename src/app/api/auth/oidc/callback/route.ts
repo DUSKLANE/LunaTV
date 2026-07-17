@@ -50,27 +50,22 @@ async function generateAuthCookie(
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('[OIDC Callback] Request URL:', request.url);
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const state = searchParams.get('state');
     const error = searchParams.get('error');
-    console.log('[OIDC Callback] Params - code:', !!code, 'state:', !!state, 'error:', error);
 
     // 使用环境变量SITE_BASE，或从请求头获取真实的origin
     let origin: string;
     if (process.env.SITE_BASE) {
       origin = process.env.SITE_BASE;
-      console.log('[OIDC Callback] Using SITE_BASE:', origin);
     } else if (request.headers.get('x-forwarded-host')) {
       const proto = request.headers.get('x-forwarded-proto') || 'https';
       const host = request.headers.get('x-forwarded-host');
       origin = `${proto}://${host}`;
-      console.log('[OIDC Callback] Using x-forwarded-host:', origin);
     } else {
       origin = request.nextUrl.origin;
       origin = origin.replace('://0.0.0.0:', '://localhost:');
-      console.log('[OIDC Callback] Using request origin:', origin);
     }
 
     // 检查是否有错误
@@ -140,8 +135,6 @@ export async function GET(request: NextRequest) {
     }
 
     const redirectUri = `${origin}/api/auth/oidc/callback`;
-    console.log('[OIDC Callback] Token exchange - redirectUri:', redirectUri);
-    console.log('[OIDC Callback] Token exchange - providerId:', providerId);
 
     // 交换code获取token
     let tokenRequestBody: Record<string, string>;
@@ -173,14 +166,12 @@ export async function GET(request: NextRequest) {
       tokenHeaders['Accept'] = 'application/json';
     }
 
-    console.log('[OIDC Callback] Fetching token from:', oidcConfig.tokenEndpoint);
     const tokenResponse = await fetch(oidcConfig.tokenEndpoint, {
       method: 'POST',
       headers: tokenHeaders,
       body: new URLSearchParams(tokenRequestBody),
     });
 
-    console.log('[OIDC Callback] Token response status:', tokenResponse.status);
     if (!tokenResponse.ok) {
       const errorText = await tokenResponse.text();
       console.error('获取token失败:', errorText);
@@ -259,7 +250,6 @@ export async function GET(request: NextRequest) {
       }
 
       userInfo = await userInfoResponse.json();
-      console.log('[OIDC Callback] User info received:', { providerId, hasEmail: !!userInfo.email, hasName: !!userInfo.name, hasSub: !!userInfo.sub, hasId: !!userInfo.id });
 
       // GitHub 的 email 可能为 null（如果用户未公开），需要从 /user/emails 获取
       if (providerId === 'github' && !userInfo.email) {
@@ -277,7 +267,6 @@ export async function GET(request: NextRequest) {
             const primaryEmail = emails.find((e: any) => e.primary && e.verified);
             const verifiedEmail = emails.find((e: any) => e.verified);
             userInfo.email = primaryEmail?.email || verifiedEmail?.email || null;
-            console.log('[OIDC Callback] GitHub email fetched:', { hasEmail: !!userInfo.email });
           }
         } catch (error) {
           console.error('获取 GitHub email 失败:', error);
@@ -381,8 +370,6 @@ export async function GET(request: NextRequest) {
       providerId: providerId, // 存储 provider ID 用于注册时验证
       timestamp: Date.now(),
     };
-    console.log('[OIDC Callback] Creating oidc_session:', { sub: oidcSession.sub, hasEmail: !!oidcSession.email, hasName: !!oidcSession.name, providerId });
-
     const response = NextResponse.redirect(new URL('/oidc-register', origin));
     response.cookies.set('oidc_session', JSON.stringify(oidcSession), {
       path: '/',
@@ -426,16 +413,12 @@ export async function GET(request: NextRequest) {
 // Apple Sign In uses response_mode=form_post, which sends a POST request
 export async function POST(request: NextRequest) {
   try {
-    console.log('[OIDC Callback POST] Request URL:', request.url);
-
     // Apple sends params in form data instead of query params
     const formData = await request.formData();
     const code = formData.get('code') as string | null;
     const state = formData.get('state') as string | null;
     const error = formData.get('error') as string | null;
     const userJson = formData.get('user') as string | null; // Apple may send user data
-
-    console.log('[OIDC Callback POST] Form params - code:', !!code, 'state:', !!state, 'error:', error, 'user:', !!userJson);
 
     // Reconstruct URL with query params to reuse GET handler logic
     const url = new URL(request.url);

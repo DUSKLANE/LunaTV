@@ -89,14 +89,10 @@ export function useWatchRoom(options: UseWatchRoomOptions): UseWatchRoomReturn {
 
   const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 连接到观影室服务器
   const connect = useCallback(() => {
     if (socket) {
-      console.log('[WatchRoom] Already connected');
       return;
     }
-
-    console.log('[WatchRoom] Connecting to server:', serverUrl);
 
     const newSocket = io(serverUrl, {
       auth: {
@@ -113,18 +109,14 @@ export function useWatchRoom(options: UseWatchRoomOptions): UseWatchRoomReturn {
 
     // 连接成功
     newSocket.on('connect', () => {
-      console.log('[WatchRoom] Connected to server');
       setConnected(true);
 
-      // 启动心跳
       heartbeatIntervalRef.current = setInterval(() => {
         newSocket.emit('heartbeat');
-      }, 15000); // 每15秒发送一次心跳
+      }, 15000);
     });
 
-    // 连接断开
     newSocket.on('disconnect', (reason) => {
-      console.log('[WatchRoom] Disconnected:', reason);
       setConnected(false);
       setCurrentRoom(null);
       setMembers([]);
@@ -137,134 +129,109 @@ export function useWatchRoom(options: UseWatchRoomOptions): UseWatchRoomReturn {
       onDisconnect?.();
     });
 
-    // 连接错误
     newSocket.on('error', (error: string) => {
       console.error('[WatchRoom] Error:', error);
       onError?.(error);
     });
 
-    // 房间事件
     newSocket.on('room:created', (room: Room) => {
-      console.log('[WatchRoom] Room created:', room);
       setCurrentRoom(room);
       setMembers([]);
       setMessages([]);
     });
 
     newSocket.on('room:joined', ({ room, members: roomMembers }) => {
-      console.log('[WatchRoom] Joined room:', room);
       setCurrentRoom(room);
       setMembers(roomMembers);
       setMessages([]);
     });
 
     newSocket.on('room:left', () => {
-      console.log('[WatchRoom] Left room');
       setCurrentRoom(null);
       setMembers([]);
       setMessages([]);
     });
 
     newSocket.on('room:member-joined', (member: Member) => {
-      console.log('[WatchRoom] Member joined:', member);
       setMembers((prev) => [...prev, member]);
     });
 
     newSocket.on('room:member-left', (userId: string) => {
-      console.log('[WatchRoom] Member left:', userId);
       setMembers((prev) => prev.filter((m) => m.id !== userId));
     });
 
     newSocket.on('room:deleted', () => {
-      console.log('[WatchRoom] Room deleted');
       setCurrentRoom(null);
       setMembers([]);
       setMessages([]);
       onError?.('房间已被删除');
     });
 
-    // 播放事件（由其他组件处理，这里只记录）
     newSocket.on('play:update', (state: PlayState) => {
-      console.log('[WatchRoom] Play state updated:', state);
-      // 更新房间的 currentState
       setCurrentRoom((prev) => prev ? { ...prev, currentState: state } : null);
     });
 
-    newSocket.on('play:seek', (currentTime: number) => {
-      console.log('[WatchRoom] Seek to:', currentTime);
+    newSocket.on('play:seek', (_currentTime: number) => {
+      // noop
     });
 
     newSocket.on('play:play', () => {
-      console.log('[WatchRoom] Play');
+      // noop
     });
 
     newSocket.on('play:pause', () => {
-      console.log('[WatchRoom] Pause');
+      // noop
     });
 
     newSocket.on('play:change', (state: PlayState) => {
-      console.log('[WatchRoom] Video changed:', state);
-      // 更新房间的 currentState
       setCurrentRoom((prev) => prev ? { ...prev, currentState: state } : null);
     });
 
     newSocket.on('live:change', (state: LiveState) => {
-      console.log('[WatchRoom] Live channel changed:', state);
-      // 更新房间的 currentState
       setCurrentRoom((prev) => prev ? { ...prev, currentState: state } : null);
     });
 
-    // 屏幕共享事件
     newSocket.on('screen:start', (state: ScreenState) => {
-      console.log('[WatchRoom] Screen share started:', state);
       setCurrentRoom((prev) => prev ? { ...prev, currentState: state } : null);
     });
 
     newSocket.on('screen:stop', () => {
-      console.log('[WatchRoom] Screen share stopped');
       setCurrentRoom((prev) => prev ? { ...prev, currentState: null } : null);
     });
 
-    newSocket.on('screen:viewer-ready', (data) => {
-      console.log('[WatchRoom] Viewer ready:', data.userId);
+    newSocket.on('screen:viewer-ready', (_data) => {
+      // noop
     });
 
-    newSocket.on('screen:offer', (data) => {
-      console.log('[WatchRoom] Screen offer received from:', data.userId);
+    newSocket.on('screen:offer', (_data) => {
+      // noop
     });
 
-    newSocket.on('screen:answer', (data) => {
-      console.log('[WatchRoom] Screen answer received from:', data.userId);
+    newSocket.on('screen:answer', (_data) => {
+      // noop
     });
 
-    newSocket.on('screen:ice', (data) => {
-      console.log('[WatchRoom] Screen ICE candidate received from:', data.userId);
+    newSocket.on('screen:ice', (_data) => {
+      // noop
     });
 
     newSocket.on('state:cleared', () => {
-      console.log('[WatchRoom] State cleared');
-      // 清除房间的 currentState
       setCurrentRoom((prev) => prev ? { ...prev, currentState: undefined } : null);
     });
 
-    // 聊天事件
     newSocket.on('chat:message', (message: ChatMessage) => {
-      console.log('[WatchRoom] New message:', message);
       setMessages((prev) => [...prev, message]);
     });
 
-    // 心跳响应
     newSocket.on('heartbeat:pong', () => {
-      // console.log('[WatchRoom] Heartbeat pong');
+      // noop
     });
 
     setSocket(newSocket);
   }, [serverUrl, authKey, onError, onDisconnect, socket]);
 
-  // 断开连接
   const disconnect = useCallback(() => {
     if (socket) {
-      console.log('[WatchRoom] Disconnecting...');
       socket.disconnect();
       setSocket(null);
       setConnected(false);
@@ -324,14 +291,9 @@ export function useWatchRoom(options: UseWatchRoomOptions): UseWatchRoomReturn {
       return { success: false, error: '未连接到服务器' };
     }
 
-    console.log('[WatchRoom] Joining room with userName:', userName);
-
     return new Promise<{ success: boolean; room?: Room; members?: Member[]; error?: string }>((resolve) => {
       socket.emit('room:join', { roomId, password, userName }, (response) => {
-        console.log('[WatchRoom] Join room response:', response);
         if (response.success && response.room && response.members) {
-          console.log('[WatchRoom] Members received:', response.members);
-          // 立即更新状态
           setCurrentRoom(response.room);
           setMembers(response.members);
           setMessages([]);

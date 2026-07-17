@@ -59,7 +59,6 @@ export function useRefreshTrailerUrlMutation() {
       }
 
       if (data.code === 200 && data.data?.trailerUrl) {
-        console.log('[HeroBanner] 成功获取新的trailer URL');
         return data.data.trailerUrl;
       }
 
@@ -91,8 +90,6 @@ export function useClearTrailerUrlMutation() {
     { doubanId: number | string }
   >({
     mutationFn: async ({ doubanId }) => {
-      console.log('[HeroBanner] 清除过期的 trailer URL');
-
       // Update React Query cache - remove the expired URL
       queryClient.setQueryData<Record<string, string>>(
         ['refreshedTrailerUrls'],

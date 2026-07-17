@@ -1961,9 +1961,7 @@ function LivePageClient() {
     });
 
     // 监听缓冲区清理事件
-    hls.on(Hls.Events.BUFFER_FLUSHED, (event, data) => {
-      console.log('Buffer flushed:', data);
-    });
+    hls.on(Hls.Events.BUFFER_FLUSHED, () => {});
   }
 
   // FLV 播放器加载函数
@@ -2238,7 +2236,6 @@ function LivePageClient() {
             // MediaError codes: 1=ABORTED, 2=NETWORK, 3=DECODE, 4=SRC_NOT_SUPPORTED
             if (errorCode === 2) {
               // 网络错误由 HLS/FLV 处理
-              console.log('Video element network error (handled by HLS/FLV)');
             } else if (errorCode === 3) {
               // 只在没有已设置错误时才设置解码错误
               setUnsupportedType(prev => prev || 'decode-error');

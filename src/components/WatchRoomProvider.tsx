@@ -91,22 +91,17 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
 
     const checkUsername = () => {
       checkCount++;
-      console.log(`[WatchRoom] Checking username (${checkCount}/${maxChecks})...`);
-      console.log('[WatchRoom] All cookies:', document.cookie);
 
       const authInfo = getAuthInfoFromBrowserCookie();
-      console.log('[WatchRoom] Auth info:', authInfo);
       const username = authInfo?.username || '游客';
 
       if (username !== '游客') {
         // 成功获取用户名
-        console.log('[WatchRoom] ✓ Username loaded:', username);
         setCurrentUserName(username);
         setUserNameLoaded(true);
         if (intervalId) clearInterval(intervalId);
       } else if (checkCount >= maxChecks) {
         // 达到最大检查次数，放弃
-        console.log('[WatchRoom] ✗ Failed to load username after', maxChecks, 'attempts');
         setCurrentUserName('游客');
         setUserNameLoaded(true);
         if (intervalId) clearInterval(intervalId);
@@ -131,29 +126,24 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
     authKey: authKey,
     userName: currentUserName,
     onError: (error) => console.error('[WatchRoom] Error:', error),
-    onDisconnect: () => console.log('[WatchRoom] Disconnected'),
+    onDisconnect: () => {},
   });
 
   // 加载配置
   useEffect(() => {
     const loadConfig = async (retryCount = 0) => {
-      console.log('[WatchRoom] Loading config... (attempt', retryCount + 1, ')');
       try {
         const response = await fetch('/api/watch-room/config');
-        console.log('[WatchRoom] Config response status:', response.status);
 
         // 如果 401 且是第一次尝试，延迟后重试一次
         if (response.status === 401 && retryCount === 0) {
-          console.log('[WatchRoom] Got 401, retrying after delay...');
           setTimeout(() => loadConfig(1), 500);
           return;
         }
 
         if (response.ok) {
           const data = await response.json();
-          console.log('[WatchRoom] Config loaded:', data);
           const enabledValue = data.enabled === true;
-          console.log('[WatchRoom] Setting isEnabled to:', enabledValue);
           setConfig(data);
           setIsEnabled(enabledValue);
 
@@ -166,7 +156,6 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
               if (authResponse.ok) {
                 const authData = await authResponse.json();
                 setAuthKey(authData.authKey || '');
-                console.log('[WatchRoom] Auth key loaded');
               }
             } catch (error) {
               console.error('[WatchRoom] Failed to load auth key:', error);
@@ -180,7 +169,6 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
         console.error('[WatchRoom] Error loading config:', error);
         setIsEnabled(false);
       } finally {
-        console.log('[WatchRoom] Config loading finished');
         setConfigLoading(false);
       }
     };
@@ -191,7 +179,6 @@ export function WatchRoomProvider({ children }: WatchRoomProviderProps) {
   // 连接到服务器
   useEffect(() => {
     if (isEnabled && config?.serverUrl && authKey) {
-      console.log('[WatchRoom] Connecting to server...');
       watchRoom.connect();
     }
 

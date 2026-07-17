@@ -343,8 +343,7 @@ export const DanmuSettingsPanel = memo(function DanmuSettingsPanel({
                 if (isReloading || loading) return;
                 setIsReloading(true);
                 try {
-                  const count = await onReload();
-                  console.log(`✅ 弹幕刷新完成: ${count} 条`);
+                  await onReload();
                 } finally {
                   setIsReloading(false);
                 }

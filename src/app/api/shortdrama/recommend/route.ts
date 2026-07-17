@@ -41,7 +41,6 @@ async function fetchFromShortDramaSource(
   );
 
   if (shortDramaCategories.length === 0) {
-    console.log(`该源没有短剧分类`);
     return [];
   }
 
@@ -50,7 +49,6 @@ async function fetchFromShortDramaSource(
   const subCategory = shortDramaCategories.find((cat: any) => !PARENT_ONLY.includes(cat.type_name))
     ?? shortDramaCategories[0];
   const categoryId = subCategory.type_id;
-  console.log(`找到短剧分类ID: ${categoryId} (${subCategory.type_name})`);
 
   // Step 2: 获取该分类的短剧列表
   const apiUrl = `${api}?ac=detail&t=${categoryId}&pg=1`;
@@ -98,8 +96,6 @@ async function getRecommendedShortDramasInternal(
       source => source.type === 'shortdrama' && !source.disabled
     );
 
-    console.log(`📺 找到 ${shortDramaSources.length} 个配置的短剧源`);
-
     // 如果没有配置短剧源，使用默认源
     if (shortDramaSources.length === 0) {
       console.log('📺 使用默认短剧源');
@@ -110,10 +106,8 @@ async function getRecommendedShortDramasInternal(
     }
 
     // 有配置短剧源，聚合所有源的数据
-    console.log('📺 聚合多个短剧源的数据');
     const results = await Promise.allSettled(
       shortDramaSources.map(source => {
-        console.log(`🔄 请求短剧源: ${source.name}`);
         return fetchFromShortDramaSource(source.api, size);
       })
     );
@@ -122,7 +116,6 @@ async function getRecommendedShortDramasInternal(
     const allItems: any[] = [];
     results.forEach((result, index) => {
       if (result.status === 'fulfilled') {
-        console.log(`✅ ${shortDramaSources[index].name}: 获取到 ${result.value.length} 条数据`);
         allItems.push(...result.value);
       } else {
         console.error(`❌ ${shortDramaSources[index].name}: 请求失败`, result.reason);
@@ -141,7 +134,6 @@ async function getRecommendedShortDramasInternal(
 
     // 返回指定数量
     const finalItems = uniqueItems.slice(0, size);
-    console.log(`📊 最终返回 ${finalItems.length} 条短剧数据`);
 
     return finalItems;
   } catch (error) {
@@ -198,16 +190,9 @@ export async function GET(request: NextRequest) {
     const cacheTime = await getCacheTime();
     const response = NextResponse.json(result);
 
-    console.log(`🕐 [RECOMMEND] 设置 ${cacheTime / 3600} 小时 HTTP 缓存`);
-
     response.headers.set('Cache-Control', `public, max-age=${cacheTime}, s-maxage=${cacheTime}`);
     response.headers.set('CDN-Cache-Control', `public, s-maxage=${cacheTime}`);
     response.headers.set('Vercel-CDN-Cache-Control', `public, s-maxage=${cacheTime}`);
-
-    // 调试信息
-    response.headers.set('X-Cache-Duration', `${cacheTime / 3600}hours`);
-    response.headers.set('X-Cache-Expires-At', new Date(Date.now() + cacheTime * 1000).toISOString());
-    response.headers.set('X-Debug-Timestamp', new Date().toISOString());
 
     // Vary头确保不同设备有不同缓存
     response.headers.set('Vary', 'Accept-Encoding, User-Agent');

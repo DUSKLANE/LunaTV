@@ -81,7 +81,6 @@ async function checkRateLimit(ip: string, limit = 60, windowMs = 60000): Promise
 async function cleanExpiredRateLimitCache(): Promise<void> {
   try {
     await db.clearExpiredCache('tvbox-rate-limit');
-    console.log('Cleaned expired TVBox rate limit cache');
   } catch (error) {
     console.error('Failed to clean expired rate limit cache:', error);
   }
@@ -217,7 +216,6 @@ export async function GET(request: NextRequest) {
           tvboxEnabledSources: user.tvboxEnabledSources,
           showAdultContent: user.showAdultContent
         };
-        console.log(`[TVBox] 识别到用户 ${user.username}，源限制:`, user.tvboxEnabledSources || '无限制');
       }
     }
 
@@ -363,18 +361,14 @@ export async function GET(request: NextRequest) {
     // 应用过滤逻辑：filter 参数和用户权限都要满足
     if (shouldFilterAdult && !showAdultContent) {
       enabledSources = enabledSources.filter(source => !source.is_adult);
-      console.log(`[TVBox] 🛡️ 成人内容过滤已启用（filter=${filterParam || 'default'}, showAdultContent=${showAdultContent}），剩余源数量: ${enabledSources.length}`);
     } else if (!shouldFilterAdult) {
-      console.log(`[TVBox] ⚠️ 成人内容过滤已通过 filter=off 显式关闭`);
     } else if (showAdultContent) {
-      console.log(`[TVBox] ℹ️ 用户有成人内容访问权限，未过滤成人源`);
     }
 
     // 🔑 新增：应用用户的源限制（如果有）
     if (currentUser?.tvboxEnabledSources && currentUser.tvboxEnabledSources.length > 0) {
       const allowedSourceKeys = new Set(currentUser.tvboxEnabledSources);
       enabledSources = enabledSources.filter(source => allowedSourceKeys.has(source.key));
-      console.log(`[TVBox] 用户 ${currentUser.username} 限制后的源数量: ${enabledSources.length}`);
     }
 
     // 跟踪全局 spider jar（从 detail 字段中提取）
@@ -550,7 +544,6 @@ export async function GET(request: NextRequest) {
           if (urlMatch) {
             // 已有代理前缀，提取真实 URL
             realApiUrl = decodeURIComponent(urlMatch[1]);
-            console.log(`[TVBox Proxy] ${source.name}: 检测到旧代理，替换为新代理`);
           }
 
           // 提取源的唯一标识符（从真实域名中提取）
@@ -577,7 +570,7 @@ export async function GET(request: NextRequest) {
           const sourceId = extractSourceId(realApiUrl);
           const proxyBaseUrl = proxyConfig.proxyUrl.replace(/\/$/, ''); // 去掉结尾的斜杠
           finalApi = `${proxyBaseUrl}/p/${sourceId}?url=${encodeURIComponent(realApiUrl)}`;
-          console.log(`[TVBox Proxy] ${source.name}: ✓ 已应用代理`);
+
         }
 
         return {
@@ -801,10 +794,8 @@ export async function GET(request: NextRequest) {
       if (blobJar) {
         // Blob 存在，使用 CDN（优先使用CDN，即使是IP访问也可以用CDN）
         finalSpiderUrl = `${blobJar.url};md5;${jarInfo.md5}`;
-        console.log(`[Spider] ✅ Using Blob CDN: ${blobJar.url}`);
       } else {
         // Blob 不存在，异步上传（不阻塞响应）
-        console.log(`[Spider] Blob CDN not available, using proxy`);
         if (jarInfo.success && jarInfo.source !== 'fallback') {
           uploadSpiderJarToBlob(jarInfo.buffer, jarInfo.md5, jarInfo.source).catch(
             (err) => console.error('[Spider] Blob upload failed:', err)
@@ -817,7 +808,6 @@ export async function GET(request: NextRequest) {
         if (isIPAccess && jarInfo.success && jarInfo.source !== 'fallback') {
           // 使用原始远程源URL，避免IP地址解析问题
           finalSpiderUrl = `${jarInfo.source};md5;${jarInfo.md5}`;
-          console.log(`[Spider] ⚠️ IP访问检测到，使用远程源URL以提高兼容性: ${jarInfo.source}`);
         }
       }
     }
@@ -828,11 +818,9 @@ export async function GET(request: NextRequest) {
 
     if (customJarToUse) {
       const customJarUrl = customJarToUse.split(';')[0];
-      console.log(`[Spider] 自定义 jar: ${customJarUrl}${customJarFromConfig ? ' (全局配置)' : ' (源站配置)'}，通过代理提供`);
       // 自定义jar时，如果是IP访问，直接使用自定义URL而不是通过代理
       if (isIPAccess) {
         finalSpiderUrl = `${customJarUrl};md5;${jarInfo.md5}`;
-        console.log(`[Spider] ⚠️ IP访问 + 自定义jar，直接使用自定义URL`);
       } else {
         finalSpiderUrl = `${baseUrl}/api/proxy/spider.jar?url=${encodeURIComponent(customJarUrl)};md5;${jarInfo.md5}`;
       }

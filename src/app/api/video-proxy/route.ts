@@ -35,12 +35,9 @@ export async function GET(request: Request) {
     try {
       // 🔥 使用 douban_id 检查缓存（如果有的话）
       const cached = await isVideoCached(videoUrl, doubanId || undefined);
-      console.log(`[VideoProxy] 缓存检查结果: cached=${cached}, doubanId=${doubanId}, url=${videoUrl.substring(0, 50)}...`);
       if (cached) {
         const cachedPath = await getCachedVideoPath(videoUrl, doubanId || undefined);
-        console.log(`[VideoProxy] 缓存路径: ${cachedPath}`);
         if (cachedPath) {
-          console.log('[VideoProxy] 🎯 命中缓存，从本地文件返回');
           return serveVideoFromFile(cachedPath, request);
         }
       }
@@ -58,8 +55,6 @@ export async function GET(request: Request) {
   // 🎯 决定是否需要缓存：Kvrocks 存储 + 豆瓣视频
   const shouldCache = storageType === 'kvrocks' &&
                       (videoUrl.includes('douban') || videoUrl.includes('doubanio'));
-
-  console.log(`[VideoProxy] 缓存检查: storageType=${storageType}, shouldCache=${shouldCache}, url=${videoUrl.substring(0, 50)}...`);
 
   // 创建 AbortController 用于超时控制
   const controller = new AbortController();
@@ -126,24 +121,19 @@ export async function GET(request: Request) {
     if (!videoResponse.ok) {
       // 🎯 如果是 403/404 等错误，检查视频文件缓存
       if (storageType === 'kvrocks' && (videoResponse.status === 403 || videoResponse.status === 404)) {
-        console.log(`[VideoProxy] 视频URL返回 ${videoResponse.status}: ${videoUrl}`);
-
         // 🔥 如果有 doubanId，检查视频文件是否存在
         if (doubanId) {
           try {
             const videoFileExists = await isVideoCached('', doubanId);
             if (videoFileExists) {
-              console.log(`[VideoProxy] URL过期但视频文件存在，返回缓存: movie_${doubanId}`);
               const cachedPath = await getCachedVideoPath('', doubanId);
               if (cachedPath) {
                 return serveVideoFromFile(cachedPath, request);
               }
             } else {
-              console.log(`[VideoProxy] 视频文件不存在，清除 Redis URL 缓存: trailer:${doubanId}`);
               // 🔥 清除 refresh-trailer 的 Redis URL 缓存，下次请求会获取新 URL
               try {
                 await db.deleteCache(`trailer:${doubanId}`);
-                console.log(`[VideoProxy] ✅ 已清除 Redis URL 缓存: trailer:${doubanId}`);
               } catch (err) {
                 console.error('[VideoProxy] 清除 Redis URL 缓存失败:', err);
               }
@@ -181,8 +171,6 @@ export async function GET(request: Request) {
     const etag = videoResponse.headers.get('etag');
     const lastModified = videoResponse.headers.get('last-modified');
 
-    console.log(`[VideoProxy] 响应头: status=${videoResponse.status}, contentLength=${contentLength}, contentRange=${contentRange}, rangeHeader=${rangeHeader}`);
-
     // 创建响应头
     const headers = new Headers();
     if (contentType) headers.set('Content-Type', contentType);
@@ -212,22 +200,16 @@ export async function GET(request: Request) {
     const statusCode = rangeHeader && contentRange ? 206 : 200;
 
     // 🎯 如果需要缓存且下载了完整视频，缓存视频内容
-    console.log(`[VideoProxy] 缓存条件检查: shouldCache=${shouldCache}, contentRange=${contentRange}, hasBody=${!!videoResponse.body}, rangeHeader=${rangeHeader}`);
-
     if (shouldCache && !contentRange && videoResponse.body) {
       try {
-        console.log('[VideoProxy] 开始缓存视频...');
         // 读取完整视频内容
         const videoBuffer = Buffer.from(await videoResponse.arrayBuffer());
-        console.log(`[VideoProxy] 视频下载完成，大小: ${(videoBuffer.length / 1024 / 1024).toFixed(2)}MB`);
 
         // 异步缓存视频内容（不阻塞响应）
         // 🔥 传入 doubanId，确保同一部影片只有一个视频文件
         cacheVideoContent(videoUrl, videoBuffer, contentType || 'video/mp4', doubanId || undefined).catch(err => {
           console.error('[VideoProxy] 缓存视频失败:', err);
         });
-
-        console.log(`[VideoProxy] ✅ 视频已缓存: ${videoUrl.substring(0, 50)}...`);
 
         // 🎯 如果客户端请求的是 Range，从缓存的完整视频中返回指定范围
         if (rangeHeader) {

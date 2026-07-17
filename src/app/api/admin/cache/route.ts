@@ -19,40 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 添加调试信息
-    console.log('🔍 开始获取缓存统计...');
-    
-    // 检查存储类型
     const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
-    console.log('🔍 存储类型:', storageType);
-    
-    // 如果是 Upstash，直接测试连接
-    if (storageType === 'upstash') {
-      const storage = (db as any).storage;
-      console.log('🔍 存储实例存在:', !!storage);
-      console.log('🔍 存储实例类型:', storage?.constructor?.name);
-      console.log('🔍 withRetry方法:', typeof storage?.withRetry);
-      console.log('🔍 client存在:', !!storage?.client);
-      console.log('🔍 client.keys方法:', typeof storage?.client?.keys);
-      console.log('🔍 client.mget方法:', typeof storage?.client?.mget);
-      
-      if (storage && storage.client) {
-        try {
-          console.log('🔍 测试获取所有cache:*键...');
-          const allKeys = await storage.withRetry(() => storage.client.keys('cache:*'));
-          console.log('🔍 找到的键:', allKeys.length, allKeys.slice(0, 5));
-          
-          if (allKeys.length > 0) {
-            console.log('🔍 测试获取第一个键的值...');
-            const firstValue = await storage.withRetry(() => storage.client.get(allKeys[0]));
-            console.log('🔍 第一个值的类型:', typeof firstValue);
-            console.log('🔍 第一个值的长度:', typeof firstValue === 'string' ? firstValue.length : 'N/A');
-          }
-        } catch (debugError) {
-          console.error('🔍 调试测试失败:', debugError);
-        }
-      }
-    }
     
     const stats = await getCacheStats();
     return NextResponse.json({
@@ -173,8 +140,6 @@ export async function DELETE(request: NextRequest) {
 
 // 获取缓存统计信息
 async function getCacheStats() {
-  console.log('📊 开始获取缓存统计信息...');
-
   // 直接使用数据库统计（支持KVRocks/Upstash/Redis）
   const dbStats = await DatabaseCacheManager.getSimpleCacheStats();
   
@@ -210,7 +175,6 @@ async function getCacheStats() {
     };
   }
   
-  console.log(`✅ 缓存统计获取完成: 总计 ${dbStats.total.count} 项`);
   return dbStats;
 }
 
@@ -261,7 +225,6 @@ async function clearShortdramaCache(): Promise<number> {
       localStorage.removeItem(key);
       clearedCount++;
     });
-    console.log(`🗑️ localStorage中清理了 ${keys.length} 个短剧缓存项`);
   }
 
   return clearedCount;
@@ -284,7 +247,6 @@ async function clearTmdbCache(): Promise<number> {
       localStorage.removeItem(key);
       clearedCount++;
     });
-    console.log(`🗑️ localStorage中清理了 ${keys.length} 个TMDB缓存项`);
   }
 
   return clearedCount;
@@ -307,7 +269,6 @@ async function clearDanmuCache(): Promise<number> {
       localStorage.removeItem(key);
       clearedCount++;
     });
-    console.log(`🗑️ localStorage中清理了 ${keys.length} 个弹幕缓存项`);
   }
 
   return clearedCount;
@@ -330,7 +291,6 @@ async function clearYouTubeCache(): Promise<number> {
       localStorage.removeItem(key);
       clearedCount++;
     });
-    console.log(`🗑️ localStorage中清理了 ${keys.length} 个YouTube搜索缓存项`);
   }
 
   return clearedCount;
@@ -353,7 +313,6 @@ async function clearBilibiliCache(): Promise<number> {
       localStorage.removeItem(key);
       clearedCount++;
     });
-    console.log(`🗑️ localStorage中清理了 ${keys.length} 个Bilibili搜索缓存项`);
   }
 
   return clearedCount;
@@ -376,7 +335,6 @@ async function clearNetdiskCache(): Promise<number> {
       localStorage.removeItem(key);
       clearedCount++;
     });
-    console.log(`🗑️ localStorage中清理了 ${keys.length} 个网盘搜索缓存项`);
   }
 
   return clearedCount;
@@ -405,7 +363,6 @@ async function clearSearchCache(): Promise<number> {
       localStorage.removeItem(key);
       clearedCount++;
     });
-    console.log(`🗑️ localStorage中清理了 ${keys.length} 个搜索缓存项`);
   }
 
   return clearedCount;
@@ -449,7 +406,6 @@ async function clearExpiredCache(): Promise<number> {
       }
     });
     
-    console.log(`🗑️ localStorage中清理了 ${clearedCount - dbCleared} 个过期缓存项`);
   }
 
   return clearedCount;

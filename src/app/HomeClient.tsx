@@ -1281,10 +1281,6 @@ function HomeClient({ initialConfig }: {
               {state.homePageConfig.showContinueWatching && <ContinueWatching />}
 
               {/* 即将上映 */}
-              {(() => {
-                console.log('🔍 即将上映 section 渲染检查:', { loading, upcomingReleasesCount: upcomingReleases.length });
-                return null;
-              })()}
               {state.homePageConfig.showUpcomingReleases && upcomingReleases.length > 0 && (
                 <section className='mb-8'>
                   <div className='mb-4 flex items-center justify-between'>

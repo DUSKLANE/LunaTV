@@ -262,7 +262,6 @@ function HeroBanner({
 
         // 🔥 只在没有缓存时才请求
         if (!cachedValue) {
-          console.log('[HeroBanner] 延迟加载 trailer:', item.title);
           requestedTrailerIdsRef.current.add(doubanIdStr);
           await refreshTrailerUrl(item.douban_id);
         } else if (cachedValue?.startsWith('NO_TRAILER_')) {
@@ -270,7 +269,6 @@ function HeroBanner({
           const markedTime = parseInt(cachedValue.split('_')[2]);
           const now = Date.now();
           if (now - markedTime > NO_TRAILER_COOLDOWN) {
-            console.log('[HeroBanner] 无预告片标记已过期（24小时），重新尝试:', item.title);
             requestedTrailerIdsRef.current.add(doubanIdStr);
             await refreshTrailerUrl(item.douban_id);
           }
@@ -279,7 +277,6 @@ function HeroBanner({
           const failedTime = parseInt(cachedValue.split('_')[1]);
           const now = Date.now();
           if (now - failedTime > RETRY_COOLDOWN) {
-            console.log('[HeroBanner] 失败冷却期已过，重新尝试:', item.title);
             requestedTrailerIdsRef.current.add(doubanIdStr);
             await refreshTrailerUrl(item.douban_id);
           }
@@ -427,7 +424,6 @@ function HeroBanner({
                       requestedTrailerIdsRef.current.delete(doubanIdStr);
 
                       // 重新刷新URL（强制刷新，跳过服务端缓存）
-                      console.log(`[HeroBanner] 强制刷新 trailer URL: ${item.title}`);
                       const newUrl = await refreshTrailerUrl(item.douban_id, true);
                       if (newUrl) {
                         // 重新加载视频
@@ -436,7 +432,6 @@ function HeroBanner({
                     }
                   }}
                   onLoadedData={(e) => {
-                    console.log('[HeroBanner] 视频加载成功:', item.title);
                     setVideoLoaded(true); // 视频加载完成，淡入显示
                     // 确保视频开始播放
                     const video = e.currentTarget;
