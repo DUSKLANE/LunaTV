@@ -1,6 +1,5 @@
 import { clsx, type ClassValue } from 'clsx';
 import he from 'he';
-import Hls from 'hls.js';
 import { twMerge } from 'tailwind-merge';
 
 /**
@@ -326,6 +325,7 @@ export async function getVideoResolutionFromM3u8(
     }
     
     // 非iPad设备使用优化后的测速逻辑
+    const { default: Hls } = await import('hls.js');
     return new Promise((resolve, reject) => {
       const video = document.createElement('video');
       video.muted = true;

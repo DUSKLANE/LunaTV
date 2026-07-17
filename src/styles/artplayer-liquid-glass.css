@@ -17,9 +17,9 @@
 
 .artplayer-plugin-liquid-glass.art-control-show .art-bottom .art-liquid-glass {
   border-radius: 8px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background-color: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(var(--control-bar-blur, 12px));
+  -webkit-backdrop-filter: blur(var(--control-bar-blur, 12px));
+  background-color: rgba(0, 0, 0, var(--control-bar-bg-opacity, 0.25));
   padding: var(--art-padding) calc(var(--art-padding) * 1.5) 5px;
 }
 
@@ -31,12 +31,12 @@
   -webkit-backdrop-filter: none;
   background-image: linear-gradient(
     to top,
-    rgba(0, 0, 0, 0.85),
-    rgba(0, 0, 0, 0.5),
+    rgba(0, 0, 0, var(--control-bar-opacity, 0.85)),
+    rgba(0, 0, 0, var(--control-bar-mid-opacity, 0.5)),
     transparent
   );
   background-color: transparent;
-  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, var(--control-bar-shadow-opacity, 0.6));
 }
 
 .artplayer-plugin-liquid-glass.art-control-show .art-settings {

@@ -14,6 +14,7 @@ import '@/styles/artplayer-fullscreen-title.css';
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Hls from 'hls.js';
+import dynamic from 'next/dynamic';
 import { Heart, ChevronUp, Download, X } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
@@ -22,36 +23,39 @@ import { useDownload } from '@/contexts/DownloadContext';
 import { normalizeDownloadSource } from '@/lib/download';
 import { useDanmu } from '@/hooks/useDanmu';
 import type { DanmuManualOverride } from '@/hooks/useDanmu';
-import DownloadEpisodeSelector from '@/components/download/DownloadEpisodeSelector';
-import DanmuManualMatchModal, { type DanmuManualSelection } from '@/components/DanmuManualMatchModal';
-import EpisodeSelector from '@/components/EpisodeSelector';
-import NetDiskSearchResults from '@/components/NetDiskSearchResults';
-import AcgSearch from '@/components/AcgSearch';
 import PageLayout from '@/components/PageLayout';
 import SkipController, { SkipSettingsButton } from '@/components/SkipController';
 import VideoCard from '@/components/VideoCard';
-import CommentSection from '@/components/play/CommentSection';
-import DownloadButtons from '@/components/play/DownloadButtons';
+import LoadingScreen from '@/components/play/LoadingScreen';
+import PlayInfoPanel from '@/components/play/PlayInfoPanel';
+import VideoLoadingOverlay from '@/components/play/VideoLoadingOverlay';
 import FavoriteButton from '@/components/play/FavoriteButton';
 import NetDiskButton from '@/components/play/NetDiskButton';
 import CollapseButton from '@/components/play/CollapseButton';
 import BackToTopButton from '@/components/play/BackToTopButton';
-import LoadingScreen from '@/components/play/LoadingScreen';
-import PlayInfoPanel from '@/components/play/PlayInfoPanel';
-import VideoLoadingOverlay from '@/components/play/VideoLoadingOverlay';
-import WatchRoomSyncBanner from '@/components/play/WatchRoomSyncBanner';
-import SourceSwitchDialog from '@/components/play/SourceSwitchDialog';
-import OwnerChangeDialog from '@/components/play/OwnerChangeDialog';
-import VideoCoverDisplay from '@/components/play/VideoCoverDisplay';
-import PlayErrorDisplay from '@/components/play/PlayErrorDisplay';
-import DanmuSettingsPanel from '@/components/play/DanmuSettingsPanel';
-import WebSRSettingsPanel from '@/components/play/WebSRSettingsPanel';
-import { SeekButtonsSettingsPanel } from '@/components/play/SeekButtonsSettingsPanel';
 import artplayerPluginChromecast from '@/lib/artplayer-plugin-chromecast';
 import artplayerPluginAutoThumbnail from '@/lib/artplayer-plugin-auto-thumbnail';
 import artplayerPluginLiquidGlass from '@/lib/artplayer-plugin-liquid-glass';
 import artplayerPluginSeekButtons from '@/lib/artplayer-plugin-seek-buttons';
 import { ClientCache } from '@/lib/client-cache';
+
+// 🔥 懒加载非首屏组件，减小初始 JS 包体积
+const DanmuSettingsPanel = dynamic(() => import('@/components/play/DanmuSettingsPanel'), { ssr: false });
+const WebSRSettingsPanel = dynamic(() => import('@/components/play/WebSRSettingsPanel'), { ssr: false });
+const SeekButtonsSettingsPanel = dynamic(() => import('@/components/play/SeekButtonsSettingsPanel').then(m => ({ default: m.SeekButtonsSettingsPanel })), { ssr: false });
+const DownloadEpisodeSelector = dynamic(() => import('@/components/download/DownloadEpisodeSelector'), { ssr: false });
+const DanmuManualMatchModal = dynamic(() => import('@/components/DanmuManualMatchModal').then(m => ({ default: m.default })), { ssr: false });
+import type { DanmuManualSelection } from '@/components/DanmuManualMatchModal';
+const EpisodeSelector = dynamic(() => import('@/components/EpisodeSelector'), { ssr: false });
+const NetDiskSearchResults = dynamic(() => import('@/components/NetDiskSearchResults'), { ssr: false });
+const AcgSearch = dynamic(() => import('@/components/AcgSearch'), { ssr: false });
+const CommentSection = dynamic(() => import('@/components/play/CommentSection'), { ssr: false });
+const DownloadButtons = dynamic(() => import('@/components/play/DownloadButtons'), { ssr: false });
+const WatchRoomSyncBanner = dynamic(() => import('@/components/play/WatchRoomSyncBanner'), { ssr: false });
+const SourceSwitchDialog = dynamic(() => import('@/components/play/SourceSwitchDialog'), { ssr: false });
+const OwnerChangeDialog = dynamic(() => import('@/components/play/OwnerChangeDialog'), { ssr: false });
+const VideoCoverDisplay = dynamic(() => import('@/components/play/VideoCoverDisplay'), { ssr: false });
+const PlayErrorDisplay = dynamic(() => import('@/components/play/PlayErrorDisplay'), { ssr: false });
 import {
   deleteFavorite,
   deletePlayRecord,
@@ -4777,14 +4781,14 @@ function PlayPageClient() {
               const opacity = item.range[0];
               localStorage.setItem('control_bar_opacity', opacity.toString());
 
-              // 实时应用透明度到毛玻璃容器
-              const liquidGlass = document.querySelector('.art-liquid-glass') as HTMLElement;
-              if (liquidGlass) {
-                // 调整背景色透明度
-                liquidGlass.style.setProperty('background-color', `rgba(0, 0, 0, ${opacity})`, 'important');
-                // 同时调整模糊效果：透明度越低，模糊越少
-                const blurAmount = Math.max(0, opacity * 15); // 0-12px
-                liquidGlass.style.setProperty('backdrop-filter', `blur(${blurAmount}px)`, 'important');
+              // 通过 CSS 变量控制透明度，DOM 重建后仍生效
+              const container = document.querySelector('.artplayer-plugin-liquid-glass') as HTMLElement;
+              if (container) {
+                container.style.setProperty('--control-bar-opacity', opacity.toString());
+                container.style.setProperty('--control-bar-bg-opacity', opacity.toString());
+                container.style.setProperty('--control-bar-mid-opacity', (opacity * 0.6).toString());
+                container.style.setProperty('--control-bar-shadow-opacity', (opacity * 0.8).toString());
+                container.style.setProperty('--control-bar-blur', `${opacity * 15}px`);
               }
 
               return `${Math.round(opacity * 100)}%`;
@@ -4817,26 +4821,6 @@ function PlayPageClient() {
               handleNextEpisode();
             },
           },
-          // 🚀 简单弹幕发送按钮（仅Web端显示）
-          ...(isMobile ? [] : [{
-            position: 'right',
-            html: '<span class="hint--top" aria-label="发送弹幕">弹</span>',
-            tooltip: '发送弹幕',
-            click: function () {
-              if (artPlayerRef.current?.plugins?.artplayerPluginDanmuku) {
-                // 手动弹出输入框发送弹幕
-                const text = prompt('请输入弹幕内容', '');
-                if (text && text.trim()) {
-                  artPlayerRef.current.plugins.artplayerPluginDanmuku.emit({
-                    text: text.trim(),
-                    time: artPlayerRef.current.currentTime,
-                    color: '#FFFFFF',
-                    mode: 0,
-                  });
-                }
-              }
-            },
-          }]),
           // 音轨切换按钮
           buildAudioTrackControl(),
         ],
@@ -5072,15 +5056,15 @@ function PlayPageClient() {
           video.style.objectFit = savedObjectFit;
         }
 
-        // 🎨 应用保存的控制栏透明度设置（毛玻璃效果）
+        // 🎨 应用保存的控制栏透明度设置（通过 CSS 变量，DOM 重建后仍生效）
         const savedOpacity = parseFloat(localStorage.getItem('control_bar_opacity') || '0.5');
-        const liquidGlass = document.querySelector('.art-liquid-glass') as HTMLElement;
-        if (liquidGlass) {
-          // 调整背景色透明度
-          liquidGlass.style.setProperty('background-color', `rgba(0, 0, 0, ${savedOpacity})`, 'important');
-          // 同时调整模糊效果：透明度越低，模糊越少
-          const blurAmount = Math.max(0, savedOpacity * 15); // 0-12px
-          liquidGlass.style.setProperty('backdrop-filter', `blur(${blurAmount}px)`, 'important');
+        const container = document.querySelector('.artplayer-plugin-liquid-glass') as HTMLElement;
+        if (container) {
+          container.style.setProperty('--control-bar-opacity', savedOpacity.toString());
+          container.style.setProperty('--control-bar-bg-opacity', savedOpacity.toString());
+          container.style.setProperty('--control-bar-mid-opacity', (savedOpacity * 0.6).toString());
+          container.style.setProperty('--control-bar-shadow-opacity', (savedOpacity * 0.8).toString());
+          container.style.setProperty('--control-bar-blur', `${savedOpacity * 15}px`);
         }
 
         // 添加分辨率徽章layer
@@ -5723,7 +5707,7 @@ function PlayPageClient() {
         }
       });
 
-      // 监听全屏事件，进入全屏后自动隐藏控制栏 + 显示标题层 + 应用透明度
+      // 监听全屏事件，进入全屏后自动隐藏控制栏 + 显示标题层
       artPlayerRef.current.on('fullscreen', (isFullscreen: boolean) => {
         const titleLayer = artPlayerRef.current?.layers['fullscreen-title'];
         if (titleLayer) {
@@ -5734,26 +5718,15 @@ function PlayPageClient() {
             clockLayer.style.display = isFullscreen ? 'flex' : 'none';
           }
 
-        // 应用保存的透明度设置
-        const liquidGlass = artPlayerRef.current?.template?.$player?.querySelector('.art-liquid-glass') as HTMLElement | null;
-        if (liquidGlass) {
+        // 重新应用 CSS 变量（全屏 DOM 重建后确保变量仍在容器上）
+        const container = artPlayerRef.current?.template?.$player?.querySelector('.artplayer-plugin-liquid-glass') as HTMLElement | null;
+        if (container) {
           const savedOpacity = parseFloat(localStorage.getItem('control_bar_opacity') || '0.5');
-          if (isFullscreen) {
-            // 全屏：禁用 backdrop-filter，使用渐变 + 阴影（根据用户透明度调整）
-            liquidGlass.style.setProperty('backdrop-filter', 'none', 'important');
-            liquidGlass.style.setProperty('-webkit-backdrop-filter', 'none', 'important');
-            liquidGlass.style.setProperty('background-color', 'transparent', 'important');
-            liquidGlass.style.setProperty('background-image', `linear-gradient(to top, rgba(0, 0, 0, ${savedOpacity}), rgba(0, 0, 0, ${savedOpacity * 0.6}), transparent)`, 'important');
-            liquidGlass.style.setProperty('box-shadow', `0 -10px 30px rgba(0, 0, 0, ${savedOpacity * 0.8})`, 'important');
-          } else {
-            // 非全屏：恢复毛玻璃效果
-            const blurAmount = Math.max(0, savedOpacity * 15);
-            liquidGlass.style.setProperty('backdrop-filter', `blur(${blurAmount}px)`, 'important');
-            liquidGlass.style.setProperty('-webkit-backdrop-filter', `blur(${blurAmount}px)`, 'important');
-            liquidGlass.style.setProperty('background-color', `rgba(0, 0, 0, ${savedOpacity})`, 'important');
-            liquidGlass.style.setProperty('background-image', 'none', 'important');
-            liquidGlass.style.setProperty('box-shadow', 'none', 'important');
-          }
+          container.style.setProperty('--control-bar-opacity', savedOpacity.toString());
+          container.style.setProperty('--control-bar-bg-opacity', savedOpacity.toString());
+          container.style.setProperty('--control-bar-mid-opacity', (savedOpacity * 0.6).toString());
+          container.style.setProperty('--control-bar-shadow-opacity', (savedOpacity * 0.8).toString());
+          container.style.setProperty('--control-bar-blur', `${savedOpacity * 15}px`);
         }
 
         if (isFullscreen) {

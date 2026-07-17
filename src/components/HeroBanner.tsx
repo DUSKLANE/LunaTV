@@ -14,6 +14,25 @@ import {
   useClearTrailerUrlMutation,
 } from '@/hooks/useHeroBannerQueries';
 
+// 处理图片 URL，使用代理绕过防盗链
+const getProxiedImageUrl = (url: string) => {
+  if (url?.includes('douban') || url?.includes('doubanio')) {
+    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+};
+
+// 确保 backdrop 是高清版本
+const getHDBackdrop = (url?: string) => {
+  if (!url) return url;
+  return url
+    .replace('/view/photo/s/', '/view/photo/l/')
+    .replace('/view/photo/m/', '/view/photo/l/')
+    .replace('/view/photo/sqxs/', '/view/photo/l/')
+    .replace('/s_ratio_poster/', '/l_ratio_poster/')
+    .replace('/m_ratio_poster/', '/l_ratio_poster/');
+};
+
 interface BannerItem {
   id: string | number;
   title: string;
@@ -96,25 +115,6 @@ function HeroBanner({
   const { data: refreshedTrailerUrls = {} } = useRefreshedTrailerUrlsQuery();
   const refreshTrailerMutation = useRefreshTrailerUrlMutation();
   const clearTrailerMutation = useClearTrailerUrlMutation();
-
-  // 处理图片 URL，使用代理绕过防盗链
-  const getProxiedImageUrl = (url: string) => {
-    if (url?.includes('douban') || url?.includes('doubanio')) {
-      return `/api/image-proxy?url=${encodeURIComponent(url)}`;
-    }
-    return url;
-  };
-
-  // 确保 backdrop 是高清版本
-  const getHDBackdrop = (url?: string) => {
-    if (!url) return url;
-    return url
-      .replace('/view/photo/s/', '/view/photo/l/')
-      .replace('/view/photo/m/', '/view/photo/l/')
-      .replace('/view/photo/sqxs/', '/view/photo/l/')
-      .replace('/s_ratio_poster/', '/l_ratio_poster/')
-      .replace('/m_ratio_poster/', '/l_ratio_poster/');
-  };
 
   // 处理视频 URL，使用代理绕过防盗链
   // 注意：refresh-trailer API 已经返回包含 douban_id 的代理 URL，这里只处理其他来源的 URL
@@ -229,15 +229,6 @@ function HeroBanner({
   const currentItem = items[currentIndex];
   const backgroundImage = getHDBackdrop(currentItem.backdrop) || currentItem.poster;
 
-  // 🔍 调试日志
-  console.log('[HeroBanner] 当前项目:', {
-    title: currentItem.title,
-    hasBackdrop: !!currentItem.backdrop,
-    hasTrailer: !!currentItem.trailerUrl,
-    trailerUrl: currentItem.trailerUrl,
-    enableVideo,
-  });
-
   // 🎯 延迟加载：只预加载当前和相邻的 trailer URL
   useEffect(() => {
     // 如果禁用了视频，不需要刷新 trailer
@@ -333,7 +324,7 @@ function HeroBanner({
                 fill
                 className="object-cover object-center"
                 priority={index === 0}
-                quality={100}
+                quality={80}
                 sizes="100vw"
                 unoptimized={item.backdrop?.includes('/l/') || item.backdrop?.includes('/l_ratio_poster/') || false}
               />
