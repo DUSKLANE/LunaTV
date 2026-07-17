@@ -240,10 +240,6 @@ async function getInitConfig(configFile: string, subConfig: {
       DoubanImageProxyType:
         process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE || 'server',
       DoubanImageProxy: process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY || '',
-      BangumiApiType: process.env.NEXT_PUBLIC_BANGUMI_API_TYPE || 'cmliussss',
-      BangumiApiProxy: process.env.NEXT_PUBLIC_BANGUMI_API_PROXY || '',
-      BangumiImageProxyType: process.env.NEXT_PUBLIC_BANGUMI_IMAGE_PROXY_TYPE || 'cmliussss',
-      BangumiImageProxy: process.env.NEXT_PUBLIC_BANGUMI_IMAGE_PROXY || '',
       DisableYellowFilter:
         process.env.NEXT_PUBLIC_DISABLE_YELLOW_FILTER === 'true',
       ShowAdultContent: false, // 默认不显示成人内容，可在管理面板修改
@@ -475,18 +471,6 @@ export async function configSelfCheck(adminConfig: AdminConfig): Promise<AdminCo
     };
   }
 
-  // 确保YouTube配置有默认值
-  if (!adminConfig.YouTubeConfig) {
-    adminConfig.YouTubeConfig = {
-      enabled: false,                                   // 默认关闭
-      apiKey: '',                                       // 默认为空，需要管理员配置
-      enableDemo: true,                                 // 默认启用演示模式
-      maxResults: 25,                                   // 默认每页25个结果
-      enabledRegions: ['US', 'CN', 'JP', 'KR', 'GB', 'DE', 'FR'], // 默认启用的地区
-      enabledCategories: ['Film & Animation', 'Music', 'Gaming', 'News & Politics', 'Entertainment'] // 默认启用的分类
-    };
-  }
-
   // 确保短剧配置有默认值
   if (!adminConfig.ShortDramaConfig) {
     adminConfig.ShortDramaConfig = {
@@ -518,14 +502,6 @@ export async function configSelfCheck(adminConfig: AdminConfig): Promise<AdminCo
       onlyRefreshRecent: true,                          // 仅刷新最近活跃的记录
       recentDays: 30,                                   // 最近 30 天内活跃
       onlyRefreshOngoing: true,                         // 仅刷新连载中的剧集
-    };
-  }
-
-  // 确保 Bilibili 配置有默认值
-  if (!adminConfig.BilibiliConfig) {
-    adminConfig.BilibiliConfig = {
-      enabled: true,                                    // 默认启用（无需API Key）
-      loginStatus: 'not_logged_in',                     // 默认未登录
     };
   }
 
@@ -804,7 +780,7 @@ export async function setCachedConfig(config: AdminConfig) {
 // 特殊功能权限检查
 export async function hasSpecialFeaturePermission(
   username: string,
-  feature: 'youtube-search',
+  feature: string,
   providedConfig?: AdminConfig
 ): Promise<boolean> {
   try {

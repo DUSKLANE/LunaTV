@@ -8,7 +8,6 @@ import { Suspense } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useInfiniteQuery, infiniteQueryOptions } from '@tanstack/react-query';
 
-import { GetBangumiCalendarData } from '@/lib/bangumi.client';
 import {
   getDoubanCategories,
   getDoubanList,
@@ -47,37 +46,6 @@ const doubanListOptions = (
           pageLimit: PAGE_SIZE,
           pageStart: pageParam * PAGE_SIZE,
         });
-      }
-      return { code: 200, message: 'success', list: [] };
-    } else if (type === 'anime' && primarySelection === '每日放送') {
-      if (pageParam > 0) {
-        return { code: 200, message: 'success', list: [] };
-      }
-      const calendarData = await GetBangumiCalendarData();
-      // Guard against non-array response (API blocked or error in CN environment)
-      if (!Array.isArray(calendarData)) {
-        console.warn('[Bangumi] Calendar data is not an array, API may be blocked:', calendarData);
-        return { code: 200, message: 'success', list: [] };
-      }
-      const weekdayData = calendarData.find((item) => item.weekday.en === selectedWeekday);
-      if (weekdayData) {
-        return {
-          code: 200,
-          message: 'success',
-          list: weekdayData.items.map((item) => ({
-            id: item.id?.toString() || '',
-            title: item.name_cn || item.name,
-            poster:
-              item.images?.large ||
-              item.images?.common ||
-              item.images?.medium ||
-              item.images?.small ||
-              item.images?.grid ||
-              '/placeholder-poster.jpg',
-            rate: item.rating?.score?.toFixed(1) || '',
-            year: item.air_date?.split('-')?.[0] || '',
-          })),
-        };
       }
       return { code: 200, message: 'success', list: [] };
     } else if (type === 'anime') {
@@ -384,9 +352,6 @@ function DoubanPageClient() {
   };
 
   const getPageDescription = () => {
-    if (type === 'anime' && primarySelection === '每日放送') {
-      return '来自 Bangumi 番组计划的精选内容';
-    }
     return '来自豆瓣的精选内容';
   };
 
@@ -517,7 +482,6 @@ function DoubanPageClient() {
                           rate={item.rate}
                           year={item.year}
                           type={mappedType}
-                          isBangumi={type === 'anime' && primarySelection === '每日放送'}
                           priority={index < 30}
                         />
                       </div>
@@ -629,7 +593,6 @@ function DoubanPageClient() {
                           rate={item.rate}
                           year={item.year}
                           type={mappedType}
-                          isBangumi={type === 'anime' && primarySelection === '每日放送'}
                         />
                       </div>
                     );

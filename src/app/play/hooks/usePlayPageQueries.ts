@@ -120,39 +120,6 @@ export function useDoubanCommentsQuery(
 }
 
 // ============================================================================
-// Hook: Bangumi 详情查询
-// ============================================================================
-
-/**
- * Query options for Bangumi details
- */
-const bangumiDetailsOptions = (bangumiId?: number | string) => queryOptions({
-  queryKey: ['bangumi', 'details', bangumiId],
-  queryFn: async () => {
-    if (!bangumiId) throw new Error('Bangumi ID is required');
-    const response = await fetch(`/api/bangumi/${bangumiId}`);
-    if (!response.ok) throw new Error('Failed to fetch Bangumi details');
-    return response.json();
-  },
-  staleTime: 30 * 60 * 1000, // 30分钟
-  gcTime: 60 * 60 * 1000, // 1小时
-  retry: 2,
-});
-
-/**
- * Bangumi 详情查询 Hook
- */
-export function useBangumiDetailsQuery(
-  bangumiId?: number | string,
-  enabled?: boolean
-): UseQueryResult<any, Error> {
-  return useQuery({
-    ...bangumiDetailsOptions(bangumiId),
-    enabled: enabled !== undefined ? enabled : !!bangumiId,
-  });
-}
-
-// ============================================================================
 // Hook: 短剧详情查询
 // ============================================================================
 

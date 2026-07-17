@@ -7,9 +7,6 @@ import Link from 'next/link';
 import { Suspense, useEffect, useState, useRef, useMemo, useReducer, useTransition } from 'react';
 import { useQuery, queryOptions } from '@tanstack/react-query';
 
-import {
-  BangumiCalendarData,
-} from '@/lib/bangumi.client';
 import { cleanExpiredCache, clearRecommendsCache } from '@/lib/shortdrama-cache';
 import { ShortDramaItem, ReleaseCalendarItem } from '@/lib/types';
 import { useClearFavoritesMutation } from '@/hooks/useFavoritesMutations';
@@ -45,7 +42,6 @@ interface HomeState {
   hotVarietyShows: DoubanItem[];
   hotAnime: DoubanItem[];
   hotShortDramas: ShortDramaItem[];
-  bangumiCalendarData: BangumiCalendarData[];
   upcomingReleases: ReleaseCalendarItem[];
   loading: boolean;
   username: string;
@@ -69,7 +65,6 @@ type HomeAction =
   | { type: 'SET_HOT_VARIETY_SHOWS'; payload: DoubanItem[] }
   | { type: 'SET_HOT_ANIME'; payload: DoubanItem[] }
   | { type: 'SET_HOT_SHORT_DRAMAS'; payload: ShortDramaItem[] }
-  | { type: 'SET_BANGUMI_CALENDAR_DATA'; payload: BangumiCalendarData[] }
   | { type: 'SET_UPCOMING_RELEASES'; payload: ReleaseCalendarItem[] }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_USERNAME'; payload: string }
@@ -95,8 +90,6 @@ const homeReducer = (state: HomeState, action: HomeAction): HomeState => {
       return { ...state, hotAnime: action.payload };
     case 'SET_HOT_SHORT_DRAMAS':
       return { ...state, hotShortDramas: action.payload };
-    case 'SET_BANGUMI_CALENDAR_DATA':
-      return { ...state, bangumiCalendarData: action.payload };
     case 'SET_UPCOMING_RELEASES':
       return { ...state, upcomingReleases: action.payload };
     case 'SET_LOADING':
@@ -179,7 +172,6 @@ function HomeClient({ initialConfig }: {
     hotVarietyShows: [],
     hotAnime: [],
     hotShortDramas: [],
-    bangumiCalendarData: [],
     upcomingReleases: [],
     loading: true,
     username: '',
@@ -297,8 +289,6 @@ function HomeClient({ initialConfig }: {
     return dataToUse;
   }, [homeData?.hotShortDramas, state.hotShortDramas, homeFetching]);
 
-  const bangumiCalendarData = Array.isArray(homeData?.bangumiCalendar) ? homeData.bangumiCalendar : [];
-
   // 🚀 Memoize HeroBanner items to prevent unnecessary re-renders
   // HeroBanner uses React.memo, but items array is recreated on every render
   // This causes memo to fail shallow comparison and re-render unnecessarily
@@ -398,17 +388,6 @@ function HomeClient({ initialConfig }: {
     if (hour < 18) return '下午好';
     return '晚上好';
   }, []); // 空依赖数组，只在组件挂载时计算一次
-
-  // 🎯 优化：缓存今日番剧计算
-  const todayAnimes = useMemo(() => {
-    const today = new Date();
-    const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const currentWeekday = weekdays[today.getDay()];
-
-    return bangumiCalendarData.find(
-      (item) => item.weekday.en === currentWeekday
-    )?.items || [];
-  }, [bangumiCalendarData]); // 依赖bangumiCalendarData，数据变化时重新计算
 
   // 🎯 优化：缓存今天的日期（用于上映日期计算）
   const today = useMemo(() => {
@@ -551,20 +530,18 @@ function HomeClient({ initialConfig }: {
       movie: favoriteItems.filter(item => {
         if (item.type) return item.type === 'movie';
         if (item.source === 'shortdrama' || item.source_name === '短剧') return false;
-        if (item.source === 'bangumi') return false;
         if (item.origin === 'live') return false;
         return item.episodes === 1;
       }).length,
       tv: favoriteItems.filter(item => {
         if (item.type) return item.type === 'tv';
         if (item.source === 'shortdrama' || item.source_name === '短剧') return false;
-        if (item.source === 'bangumi') return false;
         if (item.origin === 'live') return false;
         return item.episodes > 1;
       }).length,
       anime: favoriteItems.filter(item => {
         if (item.type) return item.type === 'anime';
-        return item.source === 'bangumi';
+        return false;
       }).length,
       shortdrama: favoriteItems.filter(item => {
         if (item.type) return item.type === 'shortdrama';
@@ -1150,7 +1127,6 @@ function HomeClient({ initialConfig }: {
                       if (item.type) return item.type === 'movie';
                       // 向后兼容：没有 type 时用 episodes 判断
                       if (item.source === 'shortdrama' || item.source_name === '短剧') return false;
-                      if (item.source === 'bangumi') return false; // 排除动漫
                       if (item.origin === 'live') return false; // 排除直播
                       // vod 来源：按集数判断
                       return item.episodes === 1;
@@ -1161,17 +1137,14 @@ function HomeClient({ initialConfig }: {
                       if (item.type) return item.type === 'tv';
                       // 向后兼容：没有 type 时用 episodes 判断
                       if (item.source === 'shortdrama' || item.source_name === '短剧') return false;
-                      if (item.source === 'bangumi') return false; // 排除动漫
                       if (item.origin === 'live') return false; // 排除直播
                       // vod 来源：按集数判断
                       return item.episodes > 1;
                     });
                   } else if (favoriteFilter === 'anime') {
                     filtered = favoriteItems.filter(item => {
-                      // 优先用 type 字段判断
                       if (item.type) return item.type === 'anime';
-                      // 向后兼容：用 source 判断
-                      return item.source === 'bangumi';
+                      return false;
                     });
                   } else if (favoriteFilter === 'shortdrama') {
                     filtered = favoriteItems.filter(item => {
@@ -1515,7 +1488,7 @@ function HomeClient({ initialConfig }: {
                       <SkeletonCard key={index} />
                     ))
                     : // 展示当前日期的番剧
-                    todayAnimes.map((anime, index) => (
+                    [].map((anime: any, index: number) => (
                         <div
                           key={`${anime.id}-${index}`}
                           className='min-w-[96px] w-24 sm:min-w-[180px] sm:w-44'
@@ -1537,7 +1510,6 @@ function HomeClient({ initialConfig }: {
                             douban_id={anime.id}
                             rate={anime.rating?.score?.toFixed(1) || ''}
                             year={anime.air_date?.split('-')?.[0] || ''}
-                            isBangumi={true}
                           />
                         </div>
                       ))}

@@ -27,12 +27,10 @@ interface PlayInfoPanelProps {
   onToggleFavorite: () => void;
   detail?: any;
   movieDetails?: any;
-  bangumiDetails?: any;
   shortdramaDetails?: any;
   movieComments: any[];
   commentsError?: string | null;
   loadingMovieDetails: boolean;
-  loadingBangumiDetails: boolean;
   loadingComments: boolean;
   loadingCelebrityWorks: boolean;
   selectedCelebrityName: string | null;
@@ -48,8 +46,8 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
     title, year, cover, sourceName, totalEpisodes, currentEpisodeIndex,
     episodeName, backdropUrl, tmdbPoster, tmdbOverview, tmdbRating, tmdbLogo, tmdbNumberOfSeasons,
     favorited, onToggleFavorite,
-    detail, movieDetails, bangumiDetails, shortdramaDetails,
-    movieComments, commentsError, loadingMovieDetails, loadingBangumiDetails,
+    detail, movieDetails, shortdramaDetails,
+    movieComments, commentsError, loadingMovieDetails,
     loadingComments, loadingCelebrityWorks, selectedCelebrityName,
     celebrityWorks, onCelebrityClick, onClearCelebrity, videoDoubanId, currentSource,
   } = props;
@@ -62,9 +60,9 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
   // TMDB poster 优先，没有则用封面
   const posterUrl = tmdbPoster || (cover ? processImageUrl(cover) : null);
   // 简介：TMDB 优先
-  const overview = tmdbOverview || movieDetails?.plot_summary || bangumiDetails?.summary || shortdramaDetails?.desc || detail?.desc;
+  const overview = tmdbOverview || movieDetails?.plot_summary || shortdramaDetails?.desc || detail?.desc;
   // 评分：TMDB 优先
-  const displayRating = tmdbRating || (movieDetails?.rate ? parseFloat(movieDetails.rate) : null) || (bangumiDetails?.rating?.score ? parseFloat(bangumiDetails.rating.score) : null);
+  const displayRating = tmdbRating || (movieDetails?.rate ? parseFloat(movieDetails.rate) : null);
 
   const hasCast = (movieDetails?.celebrities?.length ?? 0) > 0 &&
     movieDetails.celebrities.some((c: any) => c.avatar);
@@ -138,11 +136,6 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
               {displayRating && displayRating > 0 && (
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-amber-500/80 text-white font-medium">
                   ★ {displayRating.toFixed(1)}
-                </span>
-              )}
-              {bangumiDetails?.rating?.score && !tmdbRating && parseFloat(bangumiDetails.rating.score) > 0 && (
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-pink-500/80 text-white font-medium">
-                  ★ {parseFloat(bangumiDetails.rating.score).toFixed(1)}
                 </span>
               )}
               {detail?.class && String(detail.class) !== '0' && (
@@ -228,8 +221,8 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
         {activeTab === 'overview' && (
           <OverviewTab
             detail={detail} year={year} movieDetails={movieDetails}
-            bangumiDetails={bangumiDetails} shortdramaDetails={shortdramaDetails}
-            loadingMovieDetails={loadingMovieDetails} loadingBangumiDetails={loadingBangumiDetails}
+            shortdramaDetails={shortdramaDetails}
+            loadingMovieDetails={loadingMovieDetails}
             currentSource={currentSource} videoDoubanId={videoDoubanId}
           />
         )}
@@ -256,8 +249,8 @@ export default function PlayInfoPanel(props: PlayInfoPanelProps) {
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
 
-function OverviewTab({ detail, year, movieDetails, bangumiDetails, shortdramaDetails,
-  loadingMovieDetails, loadingBangumiDetails, currentSource, videoDoubanId, hasBg }: any) {
+function OverviewTab({ detail, year, movieDetails, shortdramaDetails,
+  loadingMovieDetails, currentSource, videoDoubanId, hasBg }: any) {
 
   const showDetails = currentSource !== 'shortdrama' && videoDoubanId !== 0
     && detail && detail.source !== 'shortdrama';
@@ -281,47 +274,17 @@ function OverviewTab({ detail, year, movieDetails, bangumiDetails, shortdramaDet
       </div>
 
       {/* 简介 — 始终用豆瓣数据 */}
-      {(shortdramaDetails?.desc || bangumiDetails?.summary || movieDetails?.plot_summary || detail?.desc) && (
+      {(shortdramaDetails?.desc || movieDetails?.plot_summary || detail?.desc) && (
         <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-          {movieDetails?.plot_summary || bangumiDetails?.summary || shortdramaDetails?.desc || detail?.desc}
+          {movieDetails?.plot_summary || shortdramaDetails?.desc || detail?.desc}
         </p>
       )}
 
       {/* 加载中 */}
-      {showDetails && (loadingMovieDetails || loadingBangumiDetails) && !movieDetails && !bangumiDetails && (
+      {showDetails && loadingMovieDetails && !movieDetails && (
         <div className="animate-pulse space-y-2">
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-48" />
           <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32" />
-        </div>
-      )}
-
-      {/* Bangumi 详情 */}
-      {bangumiDetails && (
-        <div className="space-y-2">
-          {bangumiDetails.rating?.score && parseFloat(bangumiDetails.rating.score) > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-700 dark:text-gray-300">Bangumi评分:</span>
-              <span className="text-pink-500 font-bold text-lg">{bangumiDetails.rating.score}</span>
-            </div>
-          )}
-          {bangumiDetails.infobox?.map((info: any, i: number) => {
-            if ((info.key === '导演' || info.key === '制作') && info.value) {
-              const v = Array.isArray(info.value) ? info.value.map((x: any) => x.v || x).join('、') : info.value;
-              return <div key={i}><span className="font-semibold text-gray-700 dark:text-gray-300">{info.key}: </span><span className="text-gray-600 dark:text-gray-400">{v}</span></div>;
-            }
-            return null;
-          })}
-          {bangumiDetails.date && (
-            <div><span className="font-semibold text-gray-700 dark:text-gray-300">播出日期: </span><span className="text-gray-600 dark:text-gray-400">{bangumiDetails.date}</span></div>
-          )}
-          <div className="flex flex-wrap gap-2 pt-1">
-            {bangumiDetails.tags?.slice(0, 6).map((tag: any, i: number) => (
-              <span key={i} className="bg-blue-500/90 text-white px-3 py-1 rounded-full text-xs font-medium">{tag.name}</span>
-            ))}
-            {bangumiDetails.total_episodes && (
-              <span className="bg-green-500/90 text-white px-3 py-1 rounded-full text-xs font-medium">共{bangumiDetails.total_episodes}话</span>
-            )}
-          </div>
         </div>
       )}
 

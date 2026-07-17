@@ -17,10 +17,6 @@
 
 import { useQueries } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-import {
-  BangumiCalendarData,
-  GetBangumiCalendarData,
-} from '@/lib/bangumi.client';
 import { getDoubanCategories } from '@/lib/douban.client';
 import { getRecommendedShortDramas } from '@/lib/shortdrama.client';
 import { DoubanItem, ShortDramaItem } from '@/lib/types';
@@ -43,7 +39,6 @@ export interface HomePageData {
   hotVarietyShows: DoubanItem[];
   hotAnime: DoubanItem[];
   hotShortDramas: ShortDramaItem[];
-  bangumiCalendar: BangumiCalendarData[];
 }
 
 export interface HomePageQueriesResult {
@@ -112,7 +107,6 @@ export function useHomePageQueries(config?: HomePageConfig): HomePageQueriesResu
       varietyResult,
       animeResult,
       shortDramasResult,
-      bangumiResult,
     ] = results;
 
     // 聚合数据
@@ -124,7 +118,6 @@ export function useHomePageQueries(config?: HomePageConfig): HomePageQueriesResu
         varietyResult.data?.code === 200 ? varietyResult.data.list : [],
       hotAnime: animeResult.data?.code === 200 ? animeResult.data.list : [],
       hotShortDramas: shortDramasResult.data || [],
-      bangumiCalendar: bangumiResult.data || [],
     };
 
     // 聚合加载状态
@@ -211,15 +204,6 @@ export function useHomePageQueries(config?: HomePageConfig): HomePageQueriesResu
         gcTime: 15 * 60 * 1000, // 15分钟
         retry: 2,
         enabled: enabledConfig.showHotShortDramas, // 🔥 根据配置决定是否执行查询
-      },
-      // 6. 番剧日历 - 总是启用，因为新番放送模块需要它
-      {
-        queryKey: ['bangumi', 'calendar'],
-        queryFn: () => GetBangumiCalendarData(),
-        staleTime: 10 * 60 * 1000, // 10分钟 - 每日更新，可以缓存更久
-        gcTime: 30 * 60 * 1000, // 30分钟
-        retry: 2,
-        enabled: enabledConfig.showNewAnime, // 🔥 番剧日历跟随新番放送模块
       },
     ],
     combine,

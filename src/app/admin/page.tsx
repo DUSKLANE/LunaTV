@@ -63,8 +63,7 @@ import TVBoxSecurityConfig from '@/components/TVBoxSecurityConfig';
 import TrustedNetworkConfig from '@/components/TrustedNetworkConfig';
 import DanmuApiConfig from '@/components/DanmuApiConfig';
 import { TVBoxTokenCell, TVBoxTokenModal } from '@/components/TVBoxTokenManager';
-import YouTubeConfig from '@/components/YouTubeConfig';
-import BilibiliConfig from '@/components/BilibiliConfig';
+
 // import ShortDramaConfig from '@/components/ShortDramaConfig'; // 暂时隐藏短剧API配置
 import DownloadConfig from '@/components/OfflineDownloadConfig';
 import EmbyConfig from '@/components/EmbyConfig';
@@ -394,12 +393,6 @@ interface SiteConfig {
   TMDBApiKey?: string;
   TMDBLanguage?: string;
   EnableTMDBActorSearch?: boolean;
-  // Bangumi API 代理
-  BangumiApiType?: string;
-  BangumiApiProxy?: string;
-  // Bangumi 图片代理
-  BangumiImageProxyType?: string;
-  BangumiImageProxy?: string;
 }
 
 // Cron 配置类型
@@ -2223,65 +2216,26 @@ const UserConfig = ({ config, role, refreshConfig }: UserConfigProps) => {
                         </div>
                       </label>
                     ))}
-                  </div>
+                   </div>
 
-                  {/* 特殊功能权限 */}
-                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                      特殊功能权限
-                    </label>
-                    <div className="space-y-3">
-                      {/* YouTube搜索功能 */}
-                      <label className="flex items-center space-x-3 p-3 border border-red-200 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 cursor-pointer transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={newUserGroup.enabledApis.includes('youtube-search')}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setNewUserGroup(prev => ({
-                                ...prev,
-                                enabledApis: [...prev.enabledApis, 'youtube-search']
-                              }));
-                            } else {
-                              setNewUserGroup(prev => ({
-                                ...prev,
-                                enabledApis: prev.enabledApis.filter(api => api !== 'youtube-search')
-                              }));
-                            }
-                          }}
-                          className="rounded border-red-300 text-red-600 focus:ring-red-500 dark:border-red-600 dark:bg-red-700"
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-red-900 dark:text-red-100">
-                            📺 YouTube搜索功能
-                          </div>
-                          <div className="text-xs text-red-700 dark:text-red-300">
-                            搜索和推荐YouTube视频 (消耗YouTube API配额)
-                          </div>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* 快速操作按钮 */}
-                  <div className='mt-4 flex space-x-2'>
-                    <button
-                      onClick={() => setNewUserGroup(prev => ({ ...prev, enabledApis: [] }))}
-                      className={buttonStyles.quickAction}
-                    >
-                      全不选（无限制）
-                    </button>
-                    <button
-                      onClick={() => {
-                        const allApis = config?.SourceConfig?.filter(source => !source.disabled).map(s => s.key) || [];
-                        const specialFeatures = ['youtube-search'];
-                        setNewUserGroup(prev => ({ ...prev, enabledApis: [...allApis, ...specialFeatures] }));
-                      }}
-                      className={buttonStyles.quickAction}
-                    >
-                      全选
-                    </button>
-                  </div>
+                   {/* 快速操作按钮 */}
+                   <div className='mt-4 flex space-x-2'>
+                     <button
+                       onClick={() => setNewUserGroup(prev => ({ ...prev, enabledApis: [] }))}
+                       className={buttonStyles.quickAction}
+                     >
+                       全不选（无限制）
+                     </button>
+                     <button
+                       onClick={() => {
+                         const allApis = config?.SourceConfig?.filter(source => !source.disabled).map(s => s.key) || [];
+                         setNewUserGroup(prev => ({ ...prev, enabledApis: [...allApis] }));
+                       }}
+                       className={buttonStyles.quickAction}
+                     >
+                       全选
+                     </button>
+                   </div>
                 </div>
 
                 {/* 成人内容控制 */}
@@ -2405,65 +2359,26 @@ const UserConfig = ({ config, role, refreshConfig }: UserConfigProps) => {
                         </div>
                       </label>
                     ))}
-                  </div>
+                   </div>
 
-                  {/* 特殊功能权限 */}
-                  <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                      特殊功能权限
-                    </label>
-                    <div className="space-y-3">
-                      {/* YouTube搜索功能 */}
-                      <label className="flex items-center space-x-3 p-3 border border-red-200 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 cursor-pointer transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={editingUserGroup.enabledApis.includes('youtube-search')}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEditingUserGroup(prev => prev ? {
-                                ...prev,
-                                enabledApis: [...prev.enabledApis, 'youtube-search']
-                              } : null);
-                            } else {
-                              setEditingUserGroup(prev => prev ? {
-                                ...prev,
-                                enabledApis: prev.enabledApis.filter(api => api !== 'youtube-search')
-                              } : null);
-                            }
-                          }}
-                          className="rounded border-red-300 text-red-600 focus:ring-red-500 dark:border-red-600 dark:bg-red-700"
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-red-900 dark:text-red-100">
-                            📺 YouTube搜索功能
-                          </div>
-                          <div className="text-xs text-red-700 dark:text-red-300">
-                            搜索和推荐YouTube视频 (消耗YouTube API配额)
-                          </div>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* 快速操作按钮 */}
-                  <div className='mt-4 flex space-x-2'>
-                    <button
-                      onClick={() => setEditingUserGroup(prev => prev ? { ...prev, enabledApis: [] } : null)}
-                      className={buttonStyles.quickAction}
-                    >
-                      全不选（无限制）
-                    </button>
-                    <button
-                      onClick={() => {
-                        const allApis = config?.SourceConfig?.filter(source => !source.disabled).map(s => s.key) || [];
-                        const specialFeatures = ['youtube-search'];
-                        setEditingUserGroup(prev => prev ? { ...prev, enabledApis: [...allApis, ...specialFeatures] } : null);
-                      }}
-                      className={buttonStyles.quickAction}
-                    >
-                      全选
-                    </button>
-                  </div>
+                   {/* 快速操作按钮 */}
+                   <div className='mt-4 flex space-x-2'>
+                     <button
+                       onClick={() => setEditingUserGroup(prev => prev ? { ...prev, enabledApis: [] } : null)}
+                       className={buttonStyles.quickAction}
+                     >
+                       全不选（无限制）
+                     </button>
+                     <button
+                       onClick={() => {
+                         const allApis = config?.SourceConfig?.filter(source => !source.disabled).map(s => s.key) || [];
+                         setEditingUserGroup(prev => prev ? { ...prev, enabledApis: [...allApis] } : null);
+                       }}
+                       className={buttonStyles.quickAction}
+                     >
+                       全选
+                     </button>
+                   </div>
                 </div>
 
                 {/* 成人内容控制 */}
@@ -5304,10 +5219,6 @@ const SiteConfigComponent = ({ config, refreshConfig }: { config: AdminConfig | 
     DoubanProxy: '',
     DoubanImageProxyType: 'direct',
     DoubanImageProxy: '',
-    BangumiApiType: 'cmliussss',
-    BangumiApiProxy: '',
-    BangumiImageProxyType: 'cmliussss',
-    BangumiImageProxy: '',
     EnablePuppeteer: false, // 默认关闭 Puppeteer
     DoubanCookies: '', // 默认无 Cookies
     DisableYellowFilter: false,
@@ -5327,8 +5238,6 @@ const SiteConfigComponent = ({ config, refreshConfig }: { config: AdminConfig | 
   const [isDoubanDropdownOpen, setIsDoubanDropdownOpen] = useState(false);
   const [isDoubanImageProxyDropdownOpen, setIsDoubanImageProxyDropdownOpen] =
     useState(false);
-  const [isBangumiApiDropdownOpen, setIsBangumiApiDropdownOpen] = useState(false);
-  const [isBangumiImageProxyDropdownOpen, setIsBangumiImageProxyDropdownOpen] = useState(false);
 
   // 豆瓣数据源选项
   const doubanDataSourceOptions = [
@@ -5340,23 +5249,6 @@ const SiteConfigComponent = ({ config, refreshConfig }: { config: AdminConfig | 
     },
     { value: 'cmliussss-cdn-ali', label: '豆瓣 CDN By CMLiussss（阿里云）' },
     { value: 'cmliussss-unified', label: '豆瓣 CDN By CMLiussss（统一域名）' },
-    { value: 'custom', label: '自定义代理' },
-  ];
-
-  // Bangumi API 代理选项
-  const bangumiApiTypeOptions = [
-    { value: 'server', label: '服务端转发（默认，访问官方 api.bgm.tv）' },
-    { value: 'cmliussss', label: 'Bangumi 反代 By CMLiussss（解决服务器被墙）' },
-    { value: 'corsapi', label: 'Cloudflare Worker 代理 By Smone' },
-    { value: 'custom', label: '自定义反代地址' },
-  ];
-
-  // Bangumi 图片代理选项
-  const bangumiImageProxyTypeOptions = [
-    { value: 'server', label: '服务器代理（默认，由服务器代理请求）' },
-    { value: 'cmliussss', label: 'Bangumi 图片 CDN By CMLiussss' },
-    { value: 'corsapi', label: 'Cloudflare Worker 代理 By Smone' },
-    { value: 'direct', label: '直连（浏览器直接请求 lain.bgm.tv）' },
     { value: 'custom', label: '自定义代理' },
   ];
 
@@ -5403,10 +5295,6 @@ const SiteConfigComponent = ({ config, refreshConfig }: { config: AdminConfig | 
         DoubanImageProxyType:
           config.SiteConfig.DoubanImageProxyType || 'direct',
         DoubanImageProxy: config.SiteConfig.DoubanImageProxy || '',
-        BangumiApiType: config.SiteConfig.BangumiApiType || 'cmliussss',
-        BangumiApiProxy: config.SiteConfig.BangumiApiProxy || '',
-        BangumiImageProxyType: config.SiteConfig.BangumiImageProxyType || 'cmliussss',
-        BangumiImageProxy: config.SiteConfig.BangumiImageProxy || '',
         EnablePuppeteer: config.DoubanConfig?.enablePuppeteer || false,
         DoubanCookies: config.DoubanConfig?.cookies || '',
         DisableYellowFilter: config.SiteConfig.DisableYellowFilter || false,
@@ -5786,152 +5674,6 @@ const SiteConfigComponent = ({ config, refreshConfig }: { config: AdminConfig | 
             />
             <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
               自定义图片代理服务器地址
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Bangumi API 代理设置 */}
-      <div className='space-y-3'>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Bangumi 数据代理
-          </label>
-          <div className='relative' data-dropdown='bangumi-api'>
-            <button
-              type='button'
-              onClick={() => setIsBangumiApiDropdownOpen(!isBangumiApiDropdownOpen)}
-              className="w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left"
-            >
-              {bangumiApiTypeOptions.find(o => o.value === siteSettings.BangumiApiType)?.label}
-            </button>
-            <div className='absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none'>
-              <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isBangumiApiDropdownOpen ? 'rotate-180' : ''}`} />
-            </div>
-            {isBangumiApiDropdownOpen && (
-              <div className='absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto'>
-                {bangumiApiTypeOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type='button'
-                    onClick={() => {
-                      setSiteSettings(prev => ({ ...prev, BangumiApiType: option.value }));
-                      setIsBangumiApiDropdownOpen(false);
-                    }}
-                    className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${siteSettings.BangumiApiType === option.value ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'}`}
-                  >
-                    <span className='truncate'>{option.label}</span>
-                    {siteSettings.BangumiApiType === option.value && (
-                      <Check className='w-4 h-4 text-green-600 dark:text-green-400 shrink-0 ml-2' />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
-            选择获取 Bangumi 番剧数据的方式，服务器无法访问 api.bgm.tv 时可切换反代
-          </p>
-          {siteSettings.BangumiApiType === 'cmliussss' && (
-            <div className='mt-3'>
-              <button
-                type='button'
-                onClick={() => window.open('https://github.com/cmliu', '_blank')}
-                className='flex items-center justify-center gap-1.5 w-full px-3 text-xs text-gray-500 dark:text-gray-400 cursor-pointer'
-              >
-                <span className='font-medium'>Thanks to @CMLiussss</span>
-                <ExternalLink className='w-3.5 opacity-70' />
-              </button>
-            </div>
-          )}
-        </div>
-        {siteSettings.BangumiApiType === 'custom' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Bangumi 反代地址
-            </label>
-            <input
-              type='text'
-              placeholder='例如: https://bgm-proxy.example.com'
-              value={siteSettings.BangumiApiProxy || ''}
-              onChange={(e) => setSiteSettings(prev => ({ ...prev, BangumiApiProxy: e.target.value }))}
-              className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500"
-            />
-            <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
-              与官方 api.bgm.tv 路径兼容的反代地址，不含末尾斜杠
-            </p>
-          </div>
-        )}
-      </div>
-
-      {/* Bangumi 图片代理设置 */}
-      <div className='space-y-3'>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Bangumi 图片代理
-          </label>
-          <div className='relative' data-dropdown='bangumi-image-proxy'>
-            <button
-              type='button'
-              onClick={() => setIsBangumiImageProxyDropdownOpen(!isBangumiImageProxyDropdownOpen)}
-              className="w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm hover:border-gray-400 dark:hover:border-gray-500 text-left"
-            >
-              {bangumiImageProxyTypeOptions.find(o => o.value === siteSettings.BangumiImageProxyType)?.label}
-            </button>
-            <div className='absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none'>
-              <ChevronDown className={`w-4 h-4 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isBangumiImageProxyDropdownOpen ? 'rotate-180' : ''}`} />
-            </div>
-            {isBangumiImageProxyDropdownOpen && (
-              <div className='absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-auto'>
-                {bangumiImageProxyTypeOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type='button'
-                    onClick={() => {
-                      setSiteSettings(prev => ({ ...prev, BangumiImageProxyType: option.value }));
-                      setIsBangumiImageProxyDropdownOpen(false);
-                    }}
-                    className={`w-full px-3 py-2.5 text-left text-sm transition-colors duration-150 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-700 ${siteSettings.BangumiImageProxyType === option.value ? 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400' : 'text-gray-900 dark:text-gray-100'}`}
-                  >
-                    <span className='truncate'>{option.label}</span>
-                    {siteSettings.BangumiImageProxyType === option.value && (
-                      <Check className='w-4 h-4 text-green-600 dark:text-green-400 shrink-0 ml-2' />
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
-            选择获取 Bangumi 封面图片的方式，服务器无法访问 lain.bgm.tv 时可切换
-          </p>
-          {siteSettings.BangumiImageProxyType === 'cmliussss' && (
-            <div className='mt-3'>
-              <button
-                type='button'
-                onClick={() => window.open('https://github.com/cmliu', '_blank')}
-                className='flex items-center justify-center gap-1.5 w-full px-3 text-xs text-gray-500 dark:text-gray-400 cursor-pointer'
-              >
-                <span className='font-medium'>Thanks to @CMLiussss</span>
-                <ExternalLink className='w-3.5 opacity-70' />
-              </button>
-            </div>
-          )}
-        </div>
-        {siteSettings.BangumiImageProxyType === 'custom' && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Bangumi 图片代理地址
-            </label>
-            <input
-              type='text'
-              placeholder='例如: https://proxy.example.com/fetch?url='
-              value={siteSettings.BangumiImageProxy || ''}
-              onChange={(e) => setSiteSettings(prev => ({ ...prev, BangumiImageProxy: e.target.value }))}
-              className="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 shadow-sm hover:border-gray-400 dark:hover:border-gray-500"
-            />
-            <p className='mt-1 text-xs text-gray-500 dark:text-gray-400'>
-              图片 URL 将以编码形式拼接在后面
             </p>
           </div>
         )}
@@ -7906,7 +7648,6 @@ function AdminPageClient() {
     homePageConfig: false,
     categoryConfig: false,
     netdiskConfig: false,
-    youtubeConfig: false,
     shortDramaConfig: false,
     embyConfig: false,
     downloadConfig: false,
@@ -8179,37 +7920,6 @@ function AdminPageClient() {
               onToggle={() => toggleTab('netdiskConfig')}
             >
               <NetDiskConfig config={config} refreshConfig={fetchConfig} />
-            </CollapsibleTab>
-
-            {/* AI推荐配置标签 */}
-            {/* YouTube配置标签 */}
-            <CollapsibleTab
-              title='YouTube配置'
-              icon={
-                <Video
-                  size={20}
-                  className='text-gray-600 dark:text-gray-400'
-                />
-              }
-              isExpanded={expandedTabs.youtubeConfig}
-              onToggle={() => toggleTab('youtubeConfig')}
-            >
-              <YouTubeConfig config={config} refreshConfig={fetchConfig} />
-            </CollapsibleTab>
-
-            {/* Bilibili配置标签 */}
-            <CollapsibleTab
-              title='Bilibili配置'
-              icon={
-                <Video
-                  size={20}
-                  className='text-pink-600 dark:text-pink-400'
-                />
-              }
-              isExpanded={expandedTabs.bilibiliConfig}
-              onToggle={() => toggleTab('bilibiliConfig')}
-            >
-              <BilibiliConfig config={config} refreshConfig={fetchConfig} />
             </CollapsibleTab>
 
             {/* 短剧API配置标签 - 暂时隐藏，代码保留以后有用再显示

@@ -3,7 +3,6 @@ import Image from 'next/image';
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchDoubanQuickInfo, fetchDoubanSuggest } from '@/lib/douban.client';
-import { fetchBangumiSubject } from '@/lib/bangumi.client';
 
 interface ActionItem {
   id: string;
@@ -29,7 +28,6 @@ interface MobileActionSheetProps {
   doubanId?: number;
   videoTitle?: string;
   videoYear?: string;
-  isBangumi?: boolean;
 }
 
 const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
@@ -47,7 +45,6 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
   doubanId,
   videoTitle,
   videoYear,
-  isBangumi = false,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -187,16 +184,6 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
     setShowScrollHint(false);
 
     const load = async () => {
-      // bangumi 直接打 bangumi API
-      if (isBangumi && doubanId && doubanId > 0) {
-        const result = await fetchBangumiSubject(doubanId);
-        if (result) {
-          setDoubanDetails(result);
-          setShowScrollHint(true);
-        }
-        return;
-      }
-
       let id = doubanId && doubanId > 0 ? String(doubanId) : null;
 
       if (!id && videoTitle) {
@@ -402,7 +389,7 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
             onScroll={() => setShowScrollHint(false)}
           >
             <div className="px-4 pt-4 pb-5 space-y-3">
-              <p className="text-base font-semibold text-gray-900 dark:text-white">{isBangumi ? 'Bangumi 简介' : '豆瓣简介'}</p>
+              <p className="text-base font-semibold text-gray-900 dark:text-white">豆瓣简介</p>
               <div className="flex flex-wrap items-center gap-2">
                 {doubanDetails.rate && parseFloat(doubanDetails.rate) > 0 && (
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-yellow-400/10 text-yellow-500 text-sm font-semibold">

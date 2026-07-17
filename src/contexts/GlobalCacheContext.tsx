@@ -13,10 +13,6 @@ import {
 } from 'react';
 import { flushSync } from 'react-dom';
 
-import {
-  BangumiCalendarData,
-  GetBangumiCalendarData,
-} from '@/lib/bangumi.client';
 import { getDoubanCategories } from '@/lib/douban.client';
 import { getRecommendedShortDramas } from '@/lib/shortdrama.client';
 import { DoubanItem, ShortDramaItem } from '@/lib/types';
@@ -29,7 +25,6 @@ interface HomePageData {
   hotVarietyShows: DoubanItem[];
   hotAnime: DoubanItem[];
   hotShortDramas: ShortDramaItem[];
-  bangumiCalendar: BangumiCalendarData[];
 }
 
 interface CacheState {
@@ -205,10 +200,9 @@ async function fetchHomeDataFromAPI(): Promise<HomePageData> {
     getDoubanCategories({ kind: 'tv', category: 'show', type: 'show' }),
     getDoubanCategories({ kind: 'tv', category: 'tv', type: 'tv_animation' }),
     getRecommendedShortDramas(undefined, 8),
-    GetBangumiCalendarData(),
   ]);
 
-  const [moviesResult, tvResult, varietyResult, animeResult, shortDramasResult, bangumiResult] = results;
+  const [moviesResult, tvResult, varietyResult, animeResult, shortDramasResult] = results;
 
   return {
     hotMovies:
@@ -229,7 +223,5 @@ async function fetchHomeDataFromAPI(): Promise<HomePageData> {
         : [],
     hotShortDramas:
       shortDramasResult.status === 'fulfilled' ? shortDramasResult.value : [],
-    bangumiCalendar:
-      bangumiResult.status === 'fulfilled' ? bangumiResult.value : [],
   };
 }

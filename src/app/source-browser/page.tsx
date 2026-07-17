@@ -183,20 +183,6 @@ export default function SourceBrowserPage() {
   const [previewDouban, setPreviewDouban] = useState<DoubanItem | null>(null);
   const [previewDoubanLoading, setPreviewDoubanLoading] = useState(false);
   const [previewDoubanId, setPreviewDoubanId] = useState<number | null>(null);
-  type BangumiTag = { name: string };
-  type BangumiInfoboxValue = string | { v: string } | Array<string | { v: string }>;
-  type BangumiInfoboxEntry = { key: string; value: BangumiInfoboxValue };
-  type BangumiSubject = {
-    name?: string;
-    name_cn?: string;
-    date?: string;
-    rating?: { score?: number };
-    tags?: BangumiTag[];
-    infobox?: BangumiInfoboxEntry[];
-    summary?: string;
-  };
-  const [previewBangumi, setPreviewBangumi] = useState<BangumiSubject | null>(null);
-  const [previewBangumiLoading, setPreviewBangumiLoading] = useState(false);
   const [previewSearchPick, setPreviewSearchPick] = useState<GlobalSearchResult | null>(null);
 
   const fetchItems = useCallback(
@@ -487,33 +473,6 @@ export default function SourceBrowserPage() {
     }
   };
 
-  // bangumi工具
-  const isBangumiId = (id: number): boolean =>
-    id > 0 && id.toString().length === 6;
-  const fetchBangumiDetails = async (bangumiId: number) => {
-    try {
-      setPreviewBangumiLoading(true);
-      setPreviewBangumi(null);
-      const res = await fetch(`/api/proxy/bangumi?path=v0/subjects/${bangumiId}`);
-      if (res.ok) {
-        const data = (await res.json()) as {
-          name?: string;
-          name_cn?: string;
-          date?: string;
-          rating?: { score?: number };
-          tags?: { name: string }[];
-          infobox?: { key: string; value: BangumiInfoboxValue }[];
-          summary?: string;
-        };
-        setPreviewBangumi(data);
-      }
-    } catch (e) {
-      // ignore
-    } finally {
-      setPreviewBangumiLoading(false);
-    }
-  };
-
   const openPreview = async (item: Item) => {
     setPreviewItem(item);
     setPreviewOpen(true);
@@ -522,7 +481,6 @@ export default function SourceBrowserPage() {
     setPreviewData(null);
     setPreviewDouban(null);
     setPreviewDoubanId(null);
-    setPreviewBangumi(null);
     setPreviewSearchPick(null);
     try {
       const res = await fetch(
@@ -582,11 +540,7 @@ export default function SourceBrowserPage() {
       }
       if (dId && dId > 0) {
         setPreviewDoubanId(dId);
-        if (isBangumiId(dId)) {
-          await fetchBangumiDetails(dId);
-        } else {
-          await fetchDoubanDetails(dId);
-        }
+        await fetchDoubanDetails(dId);
       }
     } catch (e: unknown) {
       setPreviewError(e instanceof Error ? e.message : '获取详情失败');
@@ -1069,13 +1023,6 @@ export default function SourceBrowserPage() {
                               </span>
                             );
                           }
-                          if (previewBangumi?.rating?.score) {
-                            return (
-                              <span className='px-2 py-0.5 rounded-md text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'>
-                                Bangumi {previewBangumi.rating.score}
-                              </span>
-                            );
-                          }
                           return null;
                         })()}
                         {/* 外链按钮 */}
@@ -1091,19 +1038,6 @@ export default function SourceBrowserPage() {
                                 title='打开豆瓣页面'
                               >
                                 <ExternalLink className='w-3.5 h-3.5' /> 豆瓣
-                              </a>
-                            );
-                          }
-                          if (previewBangumi && previewDoubanId) {
-                            return (
-                              <a
-                                href={`https://bgm.tv/subject/${previewDoubanId}`}
-                                target='_blank'
-                                rel='noopener noreferrer'
-                                className='inline-flex items-center gap-1 text-xs text-purple-600 dark:text-purple-300 hover:underline'
-                                title='打开 Bangumi 页面'
-                              >
-                                <ExternalLink className='w-3.5 h-3.5' /> Bangumi
                               </a>
                             );
                           }
@@ -1141,10 +1075,10 @@ export default function SourceBrowserPage() {
                         ) : null;
                       })()}
                       {/* 按需：应你的要求，预览不再展示集数选择列表，保持布局紧凑 */}
-                      {/* Douban/Bangumi 扩展信息 */}
+                      {/* Douban 扩展信息 */}
                       <div className='pt-2 space-y-2'>
                         {/* Douban */}
-                        {previewDoubanLoading && !previewBangumiLoading && (
+                        {previewDoubanLoading && (
                           <div className='text-sm text-gray-500'>
                             加载豆瓣信息...
                           </div>
@@ -1231,71 +1165,6 @@ export default function SourceBrowserPage() {
                               </div>
                             );
                           })()}
-
-                        {/* Bangumi */}
-                        {previewBangumiLoading && (
-                          <div className='text-sm text-gray-500'>
-                            加载 Bangumi 信息...
-                          </div>
-                        )}
-                        {previewBangumi && (
-                          <div className='text-sm text-gray-700 dark:text-gray-300 space-y-1'>
-                            <div className='font-semibold'>Bangumi 信息</div>
-                            <div>
-                              标题：
-                              {previewBangumi.name_cn || previewBangumi.name}
-                              {previewBangumi.rating?.score ? (
-                                <span>
-                                  （评分 {previewBangumi.rating.score}）
-                                </span>
-                              ) : null}
-                            </div>
-                            {previewBangumi.date && (
-                              <div>首播：{previewBangumi.date}</div>
-                            )}
-                            {Array.isArray(previewBangumi.tags) &&
-                              previewBangumi.tags.length > 0 && (
-                                <div className='flex flex-wrap gap-2 text-xs'>
-                                  {previewBangumi.tags
-                                    .slice(0, 10)
-                                    .map((t) => (
-                                      <span
-                                        key={t.name}
-                                        className='px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700'
-                                      >
-                                        {t.name}
-                                      </span>
-                                    ))}
-                                </div>
-                              )}
-                            {Array.isArray(previewBangumi.infobox) &&
-                              previewBangumi.infobox.length > 0 && (
-                                <div className='text-xs space-y-0.5'>
-                                  {previewBangumi.infobox
-                                    .slice(0, 10)
-                                    .map((info, idx: number) => (
-                                      <div key={idx}>
-                                        {info.key}：
-                                        {Array.isArray(info.value)
-                                          ? info.value
-                                              .map((v) =>
-                                                typeof v === 'string' ? v : v.v
-                                              )
-                                              .join('、')
-                                          : typeof info.value === 'string'
-                                          ? info.value
-                                          : info.value.v}
-                                      </div>
-                                    ))}
-                                </div>
-                              )}
-                            {previewBangumi.summary && (
-                              <div className='text-xs text-gray-600 dark:text-gray-400 leading-relaxed'>
-                                {previewBangumi.summary}
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>

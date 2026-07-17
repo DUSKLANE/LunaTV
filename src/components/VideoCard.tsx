@@ -53,7 +53,6 @@ export interface VideoCardProps {
   onDelete?: () => void;
   rate?: string;
   type?: string;
-  isBangumi?: boolean;
   isAggregate?: boolean;
   origin?: 'vod' | 'live';
   remarks?: string; // 备注信息（如"已完结"、"更新至20集"等）
@@ -90,7 +89,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
     onDelete,
     rate,
     type = '',
-    isBangumi = false,
     isAggregate = false,
     origin = 'vod',
     remarks,
@@ -429,7 +427,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
     } else if (actualSource === 'shortdrama' && actualId) {
       const url = `/play?title=${encodeURIComponent(actualTitle.trim())}&shortdrama_id=${actualId}`;
       router.prefetch(url);
-    } else if (from === 'douban' || (isAggregate && !actualSource && !actualId) || actualSource === 'upcoming_release' || actualSource === 'douban' || actualSource === 'bangumi') {
+    } else if (from === 'douban' || (isAggregate && !actualSource && !actualId) || actualSource === 'upcoming_release' || actualSource === 'douban') {
       const url = `/play?title=${encodeURIComponent(actualTitle.trim())}${actualYear ? `&year=${actualYear}` : ''}${doubanIdParam}${actualSearchType ? `&stype=${actualSearchType}` : ''}${isAggregate ? '&prefer=true' : ''}${actualQuery ? `&stitle=${encodeURIComponent(actualQuery.trim())}` : ''}`;
       router.prefetch(url);
     } else if (actualSource && actualId) {
@@ -458,8 +456,8 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
       // 短剧内容 - 使用shortdrama_id参数
       const url = `/play?title=${encodeURIComponent(actualTitle.trim())}&shortdrama_id=${actualId}`;
       router.push(url);
-    } else if (from === 'douban' || (isAggregate && !actualSource && !actualId) || actualSource === 'upcoming_release' || actualSource === 'douban' || actualSource === 'bangumi') {
-      // 豆瓣内容 或 聚合搜索 或 即将上映 或 Bangumi番剧 - 只用标题和年份搜索
+    } else if (from === 'douban' || (isAggregate && !actualSource && !actualId) || actualSource === 'upcoming_release' || actualSource === 'douban') {
+      // 豆瓣内容 或 聚合搜索 或 即将上映 - 只用标题和年份搜索
       const url = `/play?title=${encodeURIComponent(actualTitle.trim())}${actualYear ? `&year=${actualYear}` : ''
         }${doubanIdParam}${actualSearchType ? `&stype=${actualSearchType}` : ''}${isAggregate ? '&prefer=true' : ''}${actualQuery ? `&stitle=${encodeURIComponent(actualQuery.trim())}` : ''}`;
       router.push(url);
@@ -499,8 +497,8 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
       // 短剧内容 - 使用shortdrama_id参数
       const url = `/play?title=${encodeURIComponent(actualTitle.trim())}&shortdrama_id=${actualId}`;
       window.open(url, '_blank');
-    } else if (from === 'douban' || (isAggregate && !actualSource && !actualId) || actualSource === 'upcoming_release' || actualSource === 'douban' || actualSource === 'bangumi') {
-      // 豆瓣内容 或 聚合搜索 或 即将上映 或 Bangumi番剧 - 只用标题和年份搜索
+    } else if (from === 'douban' || (isAggregate && !actualSource && !actualId) || actualSource === 'upcoming_release' || actualSource === 'douban') {
+      // 豆瓣内容 或 聚合搜索 或 即将上映 - 只用标题和年份搜索
       const url = `/play?title=${encodeURIComponent(actualTitle.trim())}${actualYear ? `&year=${actualYear}` : ''}${doubanIdParam}${actualSearchType ? `&stype=${actualSearchType}` : ''}${isAggregate ? '&prefer=true' : ''}${actualQuery ? `&stitle=${encodeURIComponent(actualQuery.trim())}` : ''}`;
       window.open(url, '_blank');
     } else if (actualSource && actualId) {
@@ -797,12 +795,10 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
     if (config.showDoubanLink && actualDoubanId && actualDoubanId !== 0) {
       actions.push({
         id: 'douban',
-        label: isBangumi ? 'Bangumi 详情' : '豆瓣详情',
+        label: '豆瓣详情',
         icon: <Link size={20} />,
         onClick: () => {
-          const url = isBangumi
-            ? `https://bgm.tv/subject/${actualDoubanId.toString()}`
-            : `https://movie.douban.com/subject/${actualDoubanId.toString()}`;
+          const url = `https://movie.douban.com/subject/${actualDoubanId.toString()}`;
           window.open(url, '_blank', 'noopener,noreferrer');
         },
         color: 'default' as const,
@@ -818,7 +814,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
     optimisticFavorited,
     optimisticSearchFavorited,
     actualDoubanId,
-    isBangumi,
     isAggregate,
     dynamicSourceNames,
     isUpcoming,
@@ -1275,11 +1270,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
           {/* 豆瓣链接 */}
           {config.showDoubanLink && actualDoubanId && actualDoubanId !== 0 && (
             <a
-              href={
-                isBangumi
-                  ? `https://bgm.tv/subject/${actualDoubanId.toString()}`
-                  : `https://movie.douban.com/subject/${actualDoubanId.toString()}`
-              }
+              href={`https://movie.douban.com/subject/${actualDoubanId.toString()}`}
               target='_blank'
               rel='noopener noreferrer'
               onClick={(e) => e.stopPropagation()}
@@ -1650,7 +1641,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
         doubanId={actualDoubanId}
         videoTitle={actualTitle}
         videoYear={actualYear}
-        isBangumi={isBangumi}
       />
     </>
   );
