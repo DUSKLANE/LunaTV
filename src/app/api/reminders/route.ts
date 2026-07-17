@@ -138,10 +138,6 @@ export async function GET(request: NextRequest) {
     const responseSize = Buffer.byteLength(JSON.stringify(upgradedReminders), 'utf8');
     const duration = Date.now() - startTime;
 
-    console.log(
-      `[提醒性能] 用户: ${authInfo.username} | 提醒数: ${count} | 耗时: ${(duration / 1000).toFixed(2)}s`
-    );
-
     recordRequest({
       timestamp: startTime,
       method: 'GET',

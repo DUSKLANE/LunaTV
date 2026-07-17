@@ -138,31 +138,6 @@ export async function GET(request: NextRequest) {
     const responseSize = Buffer.byteLength(JSON.stringify(upgradedFavorites), 'utf8');
     const duration = Date.now() - startTime;
 
-    // 性能监控日志
-    const durationSeconds = (duration / 1000).toFixed(2);
-    console.log(
-      `[收藏性能] 用户: ${authInfo.username} | 收藏数: ${count} | 耗时: ${durationSeconds}s (${duration}ms)`
-    );
-
-    // 性能警告 - 根据不同耗时输出不同级别的日志
-    if (duration > 25000) {
-      console.error(
-        `❌ [严重慢查询] 用户 ${authInfo.username} 的收藏查询耗时 ${durationSeconds}s，接近超时阈值！收藏数: ${count}`
-      );
-    } else if (duration > 15000) {
-      console.warn(
-        `⚠️  [慢查询警告] 用户 ${authInfo.username} 的收藏查询耗时 ${durationSeconds}s，建议优化。收藏数: ${count}`
-      );
-    } else if (duration > 5000) {
-      console.log(
-        `⏱️  [性能提示] 用户 ${authInfo.username} 的收藏查询耗时 ${durationSeconds}s，性能尚可。收藏数: ${count}`
-      );
-    } else {
-      console.log(
-        `✅ [性能良好] 用户 ${authInfo.username} 的收藏查询耗时 ${durationSeconds}s，性能优秀！收藏数: ${count}`
-      );
-    }
-
     recordRequest({
       timestamp: startTime,
       method: 'GET',
