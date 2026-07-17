@@ -2,7 +2,7 @@
 
 'use client';
 
-import { Cat, Clover, Film, FolderOpen, Globe, Home, MoreHorizontal, PlaySquare, Radio, Search, Sparkles, Star, Tv, X } from 'lucide-react';
+import { Cat, Clover, Film, FolderOpen, Globe, Home, MoreHorizontal, PlaySquare, Radio, Search, Star, Tv, X } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useQuery, queryOptions } from '@tanstack/react-query';
@@ -21,8 +21,6 @@ interface NavItem {
 }
 
 interface ModernNavProps {
-  showAIButton?: boolean;
-  onAIButtonClick?: () => void;
 }
 
 // Query Options 工厂函数
@@ -49,7 +47,7 @@ const publicSourcesOptions = () => queryOptions({
   retry: false,
 });
 
-export default function ModernNav({ showAIButton = false, onAIButtonClick }: ModernNavProps = {}) {
+export default function ModernNav({}: ModernNavProps = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -264,17 +262,8 @@ export default function ModernNav({ showAIButton = false, onAIButtonClick }: Mod
             })}
             </div>
 
-            {/* Right Side Actions - ✨ AI Button, Theme Toggle & User Menu */}
+            {/* Right Side Actions - Theme Toggle & User Menu */}
             <div className='flex items-center gap-2 shrink-0'>
-              {showAIButton && onAIButtonClick && (
-                <button
-                  onClick={onAIButtonClick}
-                  className='relative p-2 rounded-lg bg-linear-to-br from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 active:scale-95 transition-all duration-200 shadow-lg shadow-blue-500/30 group'
-                  aria-label='AI 推荐'
-                >
-                  <Sparkles className='h-5 w-5 group-hover:scale-110 transition-transform duration-300' />
-                </button>
-              )}
               <ThemeToggle />
               <UserMenu />
             </div>

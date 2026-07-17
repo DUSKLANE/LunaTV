@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,react-hooks/exhaustive-deps,@typescript-eslint/no-empty-function */
 
-import { ExternalLink, Heart, Link, PlayCircleIcon, Radio, Star, Trash2, Sparkles, Bell, BellRing } from 'lucide-react';
+import { ExternalLink, Heart, Link, PlayCircleIcon, Radio, Star, Trash2, Bell, BellRing } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import React, {
@@ -22,7 +22,6 @@ import { useDeletePlayRecordMutation } from '@/hooks/usePlayRecordsMutations';
 import { useIsFavoritedQuery } from '@/hooks/useFavoritesQuery';
 import { useIsRemindedQuery } from '@/hooks/useRemindersQuery';
 import { useIsAuthenticated } from '@/hooks/useIsAuthenticated';
-import { isAIRecommendFeatureDisabled } from '@/lib/ai-recommend.client';
 import {
   deleteFavorite,
   deletePlayRecord,
@@ -36,7 +35,6 @@ import { processImageUrl, isSeriesCompleted } from '@/lib/utils';
 
 import { ImagePlaceholder } from '@/components/ImagePlaceholder';
 import MobileActionSheet from '@/components/MobileActionSheet';
-import AIRecommendModal from '@/components/AIRecommendModal';
 
 export interface VideoCardProps {
   id?: string;
@@ -61,8 +59,6 @@ export interface VideoCardProps {
   remarks?: string; // 备注信息（如"已完结"、"更新至20集"等）
   releaseDate?: string; // 上映日期 (YYYY-MM-DD)，用于即将上映内容
   priority?: boolean; // 图片加载优先级（用于首屏可见图片）
-  aiEnabled?: boolean; // AI功能是否启用（从父组件传递）
-  aiCheckComplete?: boolean; // AI权限检测是否完成（从父组件传递）
 }
 
 export type VideoCardHandle = {
@@ -100,8 +96,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
     remarks,
     releaseDate,
     priority = false,
-    aiEnabled: aiEnabledProp,
-    aiCheckComplete: aiCheckCompleteProp,
   }: VideoCardProps,
   ref
 ) {
@@ -121,16 +115,7 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
   ); // 图片加载状态
   const [showMobileActions, setShowMobileActions] = useState(false);
   const [searchFavorited, setSearchFavorited] = useState<boolean | null>(null); // 搜索结果的收藏状态
-  const [showAIChat, setShowAIChat] = useState(false); // AI问片弹窗
   const [isNavigating, setIsNavigating] = useState(false); // 导航加载状态
-
-  // AI功能状态：优先使用父组件传递的值，否则自己检测
-  const [aiEnabledLocal, setAiEnabledLocal] = useState(false);
-  const [aiCheckCompleteLocal, setAiCheckCompleteLocal] = useState(false);
-
-  // 实际使用的AI状态（优先父组件prop）
-  const aiEnabled = aiEnabledProp !== undefined ? aiEnabledProp : aiEnabledLocal;
-  const aiCheckComplete = aiCheckCompleteProp !== undefined ? aiCheckCompleteProp : aiCheckCompleteLocal;
 
   // 🚀 React 19 useOptimistic - 乐观更新收藏状态，提供即时UI反馈
   const [optimisticFavorited, setOptimisticFavorited] = useOptimistic(
@@ -272,18 +257,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
       unsubscribeReminders();
     };
   }, [from, actualSource, actualId, isUpcoming, remarks]);
-
-  // 检查AI功能是否启用 - 只在没有父组件传递时才执行
-  useEffect(() => {
-    // 如果父组件已传递aiEnabled，跳过本地检测
-    if (aiEnabledProp !== undefined || aiCheckCompleteProp !== undefined) {
-      return;
-    }
-
-    const disabled = isAIRecommendFeatureDisabled();
-    setAiEnabledLocal(!disabled);
-    setAiCheckCompleteLocal(true);
-  }, [aiEnabledProp, aiCheckCompleteProp]); // 依赖父组件传递的props
 
   // 🚀 使用 TanStack Query useMutation 优化收藏功能
   const handleToggleFavorite = useCallback(
@@ -836,20 +809,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
       });
     }
 
-    // AI问片功能
-    if (aiEnabled && actualTitle) {
-      actions.push({
-        id: 'ai-chat',
-        label: 'AI问片',
-        icon: <Sparkles size={20} />,
-        onClick: () => {
-          setShowMobileActions(false); // 关闭菜单
-          setShowAIChat(true);
-        },
-        color: 'default' as const,
-      });
-    }
-
     return actions;
   }, [
     config,
@@ -868,8 +827,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
     handlePlayInNewTab,
     handleToggleFavorite,
     handleDeleteRecord,
-    aiEnabled,
-    actualTitle,
   ]);
 
   return (
@@ -1481,56 +1438,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
               </div>
             );
           })()}
-
-          {/* 🎯 AI问片按钮 - 桌面端hover显示，智能位置（避开底部标签和右下角按钮） */}
-          {aiEnabled && actualTitle && (
-            <div
-              className={`
-                hidden md:block absolute
-                ${hasRightBottomButtons ? 'left-1/3 -translate-x-1/2' : 'left-1/2 -translate-x-1/2'}
-                ${hasBottomTags ? 'bottom-14' : 'bottom-4'}
-                opacity-0 translate-y-2
-                group-hover:opacity-100 group-hover:translate-y-0
-                transition-all duration-300 ease-out z-20
-              `}
-              onClick={(e) => {
-                e.stopPropagation();
-                e.preventDefault();
-              }}
-              style={{
-                WebkitUserSelect: 'none',
-                userSelect: 'none',
-                WebkitTouchCallout: 'none',
-              } as React.CSSProperties}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                return false;
-              }}
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  e.preventDefault();
-                  setShowAIChat(true);
-                }}
-                className='flex items-center gap-1.5 px-3 py-1.5 rounded-md
-                  bg-black/70 backdrop-blur-sm
-                  shadow-lg text-white/90
-                  hover:bg-black/80 hover:scale-105 hover:shadow-[0_0_12px_rgba(168,85,247,0.4)]
-                  transition-all duration-300 ease-out
-                  border border-white/10'
-                aria-label='AI问片'
-                style={{
-                  WebkitUserSelect: 'none',
-                  userSelect: 'none',
-                  WebkitTouchCallout: 'none',
-                } as React.CSSProperties}
-              >
-                <Sparkles size={14} className='text-purple-400' />
-                <span className='text-xs font-medium whitespace-nowrap'>AI问片</span>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* 进度条 */}
@@ -1745,22 +1652,6 @@ const VideoCard = forwardRef<VideoCardHandle, VideoCardProps>(function VideoCard
         videoYear={actualYear}
         isBangumi={isBangumi}
       />
-
-      {/* AI问片弹窗 */}
-      {aiEnabled && showAIChat && (
-        <AIRecommendModal
-          isOpen={showAIChat}
-          onClose={() => setShowAIChat(false)}
-          context={{
-            title: actualTitle,
-            year: actualYear,
-            douban_id: actualDoubanId,
-            type: actualSearchType as 'movie' | 'tv',
-            currentEpisode,
-          }}
-          welcomeMessage={`想了解《${actualTitle}》的更多信息吗？我可以帮你查询剧情、演员、评价等。`}
-        />
-      )}
     </>
   );
 }

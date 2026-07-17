@@ -25,7 +25,6 @@ import {
   Activity,
   AlertCircle,
   AlertTriangle,
-  Brain,
   Check,
   CheckCircle,
   ChevronDown,
@@ -54,7 +53,6 @@ import { createPortal } from 'react-dom';
 import { AdminConfig, AdminConfigResult, DEFAULT_CRON_CONFIG } from '@/lib/admin.types';
 import { getAuthInfoFromBrowserCookie } from '@/lib/auth';
 
-import AIRecommendConfig from '@/components/AIRecommendConfig';
 import CacheManager from '@/components/CacheManager';
 import DataMigration from '@/components/DataMigration';
 import ImportExportModal from '@/components/ImportExportModal';
@@ -2233,36 +2231,6 @@ const UserConfig = ({ config, role, refreshConfig }: UserConfigProps) => {
                       特殊功能权限
                     </label>
                     <div className="space-y-3">
-                      {/* AI推荐功能 */}
-                      <label className="flex items-center space-x-3 p-3 border border-orange-200 dark:border-orange-700 rounded-lg bg-orange-50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20 cursor-pointer transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={newUserGroup.enabledApis.includes('ai-recommend')}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setNewUserGroup(prev => ({
-                                ...prev,
-                                enabledApis: [...prev.enabledApis, 'ai-recommend']
-                              }));
-                            } else {
-                              setNewUserGroup(prev => ({
-                                ...prev,
-                                enabledApis: prev.enabledApis.filter(api => api !== 'ai-recommend')
-                              }));
-                            }
-                          }}
-                          className="rounded border-orange-300 text-orange-600 focus:ring-orange-500 dark:border-orange-600 dark:bg-orange-700"
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                            🤖 AI推荐功能
-                          </div>
-                          <div className="text-xs text-orange-700 dark:text-orange-300">
-                            智能推荐影视内容 (消耗OpenAI API费用)
-                          </div>
-                        </div>
-                      </label>
-
                       {/* YouTube搜索功能 */}
                       <label className="flex items-center space-x-3 p-3 border border-red-200 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 cursor-pointer transition-colors">
                         <input
@@ -2306,7 +2274,7 @@ const UserConfig = ({ config, role, refreshConfig }: UserConfigProps) => {
                     <button
                       onClick={() => {
                         const allApis = config?.SourceConfig?.filter(source => !source.disabled).map(s => s.key) || [];
-                        const specialFeatures = ['ai-recommend', 'youtube-search'];
+                        const specialFeatures = ['youtube-search'];
                         setNewUserGroup(prev => ({ ...prev, enabledApis: [...allApis, ...specialFeatures] }));
                       }}
                       className={buttonStyles.quickAction}
@@ -2445,36 +2413,6 @@ const UserConfig = ({ config, role, refreshConfig }: UserConfigProps) => {
                       特殊功能权限
                     </label>
                     <div className="space-y-3">
-                      {/* AI推荐功能 */}
-                      <label className="flex items-center space-x-3 p-3 border border-orange-200 dark:border-orange-700 rounded-lg bg-orange-50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20 cursor-pointer transition-colors">
-                        <input
-                          type="checkbox"
-                          checked={editingUserGroup.enabledApis.includes('ai-recommend')}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEditingUserGroup(prev => prev ? {
-                                ...prev,
-                                enabledApis: [...prev.enabledApis, 'ai-recommend']
-                              } : null);
-                            } else {
-                              setEditingUserGroup(prev => prev ? {
-                                ...prev,
-                                enabledApis: prev.enabledApis.filter(api => api !== 'ai-recommend')
-                              } : null);
-                            }
-                          }}
-                          className="rounded border-orange-300 text-orange-600 focus:ring-orange-500 dark:border-orange-600 dark:bg-orange-700"
-                        />
-                        <div className="flex-1">
-                          <div className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                            🤖 AI推荐功能
-                          </div>
-                          <div className="text-xs text-orange-700 dark:text-orange-300">
-                            智能推荐影视内容 (消耗OpenAI API费用)
-                          </div>
-                        </div>
-                      </label>
-
                       {/* YouTube搜索功能 */}
                       <label className="flex items-center space-x-3 p-3 border border-red-200 dark:border-red-700 rounded-lg bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 cursor-pointer transition-colors">
                         <input
@@ -2518,7 +2456,7 @@ const UserConfig = ({ config, role, refreshConfig }: UserConfigProps) => {
                     <button
                       onClick={() => {
                         const allApis = config?.SourceConfig?.filter(source => !source.disabled).map(s => s.key) || [];
-                        const specialFeatures = ['ai-recommend', 'youtube-search'];
+                        const specialFeatures = ['youtube-search'];
                         setEditingUserGroup(prev => prev ? { ...prev, enabledApis: [...allApis, ...specialFeatures] } : null);
                       }}
                       className={buttonStyles.quickAction}
@@ -7968,7 +7906,6 @@ function AdminPageClient() {
     homePageConfig: false,
     categoryConfig: false,
     netdiskConfig: false,
-    aiRecommendConfig: false,
     youtubeConfig: false,
     shortDramaConfig: false,
     embyConfig: false,
@@ -8245,20 +8182,6 @@ function AdminPageClient() {
             </CollapsibleTab>
 
             {/* AI推荐配置标签 */}
-            <CollapsibleTab
-              title='AI推荐配置'
-              icon={
-                <Brain
-                  size={20}
-                  className='text-gray-600 dark:text-gray-400'
-                />
-              }
-              isExpanded={expandedTabs.aiRecommendConfig}
-              onToggle={() => toggleTab('aiRecommendConfig')}
-            >
-              <AIRecommendConfig config={config} refreshConfig={fetchConfig} />
-            </CollapsibleTab>
-
             {/* YouTube配置标签 */}
             <CollapsibleTab
               title='YouTube配置'

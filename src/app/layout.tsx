@@ -74,7 +74,6 @@ export default async function RootLayout({
   let fluidSearch = process.env.NEXT_PUBLIC_FLUID_SEARCH !== 'false';
   let enableWebLive = false;
   let customAdFilterVersion = 0;
-  let aiRecommendEnabled = false;
   let embyEnabled = false;
   let videoProxyEnabled = false;
   let videoProxyUrl = '';
@@ -103,7 +102,6 @@ export default async function RootLayout({
     fluidSearch = config.SiteConfig.FluidSearch;
     enableWebLive = config.SiteConfig.EnableWebLive ?? false;
     customAdFilterVersion = config.SiteConfig?.CustomAdFilterVersion || 0;
-    aiRecommendEnabled = config.AIRecommendConfig?.enabled ?? false;
     // 检查是否启用了 Emby 功能（支持多源）
     embyEnabled = !!(
       config.EmbyConfig?.Sources &&
@@ -128,7 +126,6 @@ export default async function RootLayout({
     FLUID_SEARCH: fluidSearch,
     ENABLE_WEB_LIVE: enableWebLive,
     CUSTOM_AD_FILTER_VERSION: customAdFilterVersion,
-    AI_RECOMMEND_ENABLED: aiRecommendEnabled,
     EMBY_ENABLED: embyEnabled,
     PRIVATE_LIBRARY_ENABLED: embyEnabled,
     VIDEO_PROXY_ENABLED: videoProxyEnabled,
