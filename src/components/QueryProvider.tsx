@@ -27,24 +27,8 @@ function GlobalCacheInvalidator() {
       }
     );
 
-    const unsubscribeFavorites = subscribeToDataUpdates(
-      'favoritesUpdated',
-      () => {
-        queryClient.invalidateQueries({ queryKey: ['favorites'] });
-      }
-    );
-
-    const unsubscribeReminders = subscribeToDataUpdates(
-      'remindersUpdated',
-      () => {
-        queryClient.invalidateQueries({ queryKey: ['reminders'] });
-      }
-    );
-
     return () => {
       unsubscribePlayRecords();
-      unsubscribeFavorites();
-      unsubscribeReminders();
     };
   }, [queryClient]);
 

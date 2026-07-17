@@ -43,7 +43,7 @@ import {
   useChangePasswordMutation,
   useInvalidateUserMenuData,
 } from '@/hooks/useUserMenuQueries';
-import { useWatchingUpdatesQuery, useRefreshWatchingUpdates } from '@/hooks/useWatchingUpdates';
+import { useWatchingUpdatesQuery } from '@/hooks/useWatchingUpdates';
 
 interface AuthInfo {
   username?: string;
@@ -87,7 +87,6 @@ export const UserMenu: React.FC = () => {
   const { data: watchingUpdates } = useWatchingUpdatesQuery({
     enabled: showWatchingUpdates, // 页面加载时就检查（会使用缓存）
   });
-  const refreshWatchingUpdates = useRefreshWatchingUpdates();
 
   // 检查是否有实际更新（用于显示红点）- 包括新剧集更新和新上映
   // 过滤掉已忽略的新上映
@@ -197,11 +196,6 @@ export const UserMenu: React.FC = () => {
   const handleMenuClick = async () => {
     const willOpen = !isOpen;
     setIsOpen(willOpen);
-
-    // 如果是打开菜单，强制刷新追番更新
-    if (willOpen && showWatchingUpdates) {
-      refreshWatchingUpdates();
-    }
   };
 
   const handleCloseMenu = () => {
